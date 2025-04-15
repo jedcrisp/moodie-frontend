@@ -57,6 +57,17 @@ export default function App() {
       setLoading(false);
     });
 
+    useEffect(() => {
+  if (!loading && user) {
+    if (user.role === 'counselor') {
+      navigate('/admin');
+    } else if (user.role === 'student') {
+      navigate('/');
+    }
+  }
+}, [loading, user, navigate]);
+
+
     return () => {
       console.log('Unsubscribing auth listener');
       unsubscribe();
