@@ -57,15 +57,15 @@ export default function App() {
       setLoading(false);
     });
 
-    useEffect(() => {
-  if (!loading && user) {
+   useEffect(() => {
+  if (!loading && user && user.school === currentSchool) {
     if (user.role === 'counselor') {
       navigate('/admin');
     } else if (user.role === 'student') {
       navigate('/');
     }
   }
-}, [loading, user, navigate]);
+}, [user, loading, currentSchool, navigate]);
 
 
     return () => {
