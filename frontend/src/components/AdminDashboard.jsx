@@ -89,48 +89,40 @@ export default function AdminDashboard({ user }) {
       </div>
 
       {/* Student Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {students.map((s, i) => (
-          <div
-            key={i}
-            className={clsx(
-              'p-4 rounded-xl shadow bg-white border-l-8',
-              s.averageMood <= 2
-                ? 'border-red-400'
-                : s.averageMood <= 3
-                ? 'border-yellow-400'
-                : 'border-green-400'
-            )}
-          >
-            <h2 className="text-lg font-semibold text-indigo-800">{s.name}</h2>
-            <p className="text-sm text-gray-600">ID: {s.studentId}</p>
-            <p className="text-sm text-gray-600">Grade: {s.grade}</p>
-            <p className="text-sm text-gray-600">Birthday: {s.birthday}</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+  {students.map((s, i) => (
+    <div
+      key={i}
+      className={clsx(
+        'p-4 rounded-xl shadow bg-white border-l-8',
+        s.averageMood <= 2 ? 'border-red-400' :
+        s.averageMood <= 3 ? 'border-yellow-400' :
+        'border-green-400'
+      )}
+    >
+      <h2 className="text-xl font-semibold text-indigo-800 mb-1">{s.name}</h2>
+      <p className="text-sm text-gray-600">ID: {s.studentId}</p>
+      <p className="text-sm text-gray-600">Grade: {s.grade}</p>
+      <p className="text-sm text-gray-600">Birthday: {s.birthday}</p>
 
-            <div className="mt-3">
-              <p className="text-sm font-medium text-gray-700 mb-1">
-                Last 5 Moods:
-              </p>
-              <div className="flex gap-2 text-2xl">
-                {s.moods.length > 0 ? (
-                  s.moods.map((m, idx) => (
-                    <span key={idx}>{m.emoji || '❓'}</span>
-                  ))
-                ) : (
-                  <span className="text-sm text-gray-400 italic">
-                    No mood data
-                  </span>
-                )}
-              </div>
-            </div>
+      <div className="mt-3">
+        <p className="text-sm font-medium text-gray-700 mb-1">Last 5 Moods:</p>
+        <div className="flex gap-2 text-2xl">
+          {s.moods.map((mood, idx) => (
+            <span key={idx}>{mood.emoji}</span>
+          ))}
+        </div>
+      </div>
 
-            {s.averageMood !== null && (
-              <p className="mt-2 text-sm text-gray-500">
-                Avg mood: {s.averageMood.toFixed(2)}
-              </p>
-            )}
-          </div>
-        ))}
+      {s.averageMood !== null && (
+        <p className="mt-2 text-sm text-gray-500">
+          Avg mood: {s.averageMood.toFixed(2)}
+        </p>
+      )}
+    </div>
+  ))}
+</div>
+
       </div>
     </div>
   );
