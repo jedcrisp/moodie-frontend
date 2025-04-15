@@ -1,144 +1,62 @@
-import React, { useState, useEffect } from 'react';
-import { getFirestore, collection, query, orderBy, getDocs } from 'firebase/firestore';
-
-// Helper function to calculate the average mood score over the last N days
-function calcAverage(moodHistory, days) {
-  // Filter moods within the last N days
-  const today = new Date();
-  const cutoffDate = new Date(today);
-  cutoffDate.setDate(today.getDate() - days);
-
-  const recent = moodHistory.filter((record) => new Date(record.date) >= cutoffDate);
-  if (recent.length === 0) return 'N/A';
-  const total = recent.reduce((sum, record) => sum + record.mood.score, 0);
-  return (total / recent.length).toFixed(1);
-}
-
-// Helper function to get today's mood for a student
-function getTodaysMood(moodHistory) {
-  const today = new Date().toISOString().split('T')[0]; // e.g., "2025-04-15"
-  const todayMood = moodHistory.find((record) => record.date === today);
-  return todayMood ? todayMood.mood : { emoji: '❓', label: 'N/A', score: 0 };
-}
+import React from 'react';
+import { getAuth, signOut } from 'firebase/auth';
+import { LogOut } from 'lucide-react'; // use lucide or heroicons
+import clsx from 'clsx'; // optional: for cleaner conditional classes
 
 export default function AdminDashboard({ user }) {
-  const [averageDays, setAverageDays] = useState(5);
-  const [students, setStudents] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const db = getFirestore();
-
-    const fetchData = async () => {
-      try {
-        // Fetch users with role 'student' from the current school
-        const usersQuery = query(
-          collection(db, 'schools', user.school, 'users'),
-          where('role', '==', 'student')
-        );
-        const usersSnapshot = await getDocs(usersQuery);
-        const studentList = usersSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-
-        // Fetch all moods for the school, ordered by timestamp
-        const moodsQuery = query(
-          collection(db, 'schools', user.school, 'moods'),
-          orderBy('timestamp', 'desc')
-        );
-        const moodsSnapshot = await getDocs(moodsQuery);
-        const moodsData = moodsSnapshot.docs.map((doc) => ({
-          userId: doc.data().userId,
-          date: doc.data().timestamp.toDate().toISOString().split('T')[0], // e.g., "2025-04-15"
-          mood: {
-            emoji: doc.data().mood.emoji,
-            label: doc.data().mood.label,
-            score: doc.data().mood.score,
-          },
-        }));
-
-        // Aggregate mood data by student
-        const studentsWithMoods = studentList.map((student) => {
-          const studentMoods = moodsData.filter((mood) => mood.userId === student.id);
-          return {
-            id: student.id,
-            name: student.name || 'Unknown',
-            studentId: student.studentId || `S${student.id.slice(0, 3)}`, // Fallback studentId
-            todaysMood: getTodaysMood(studentMoods),
-            moodHistory: studentMoods,
-          };
-        });
-
-        setStudents(studentsWithMoods);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (user && user.school) {
-      fetchData();
-    }
-  }, [user]);
-
-  if (loading) {
-    return <div className="p-4 text-center">Loading...</div>;
-  }
+  const handleSignOut = async () => {
+    const auth = getAuth();
+    await signOut(auth);
+    window.location.reload(); // or navigate to /signin if preferred
+  };
 
   return (
-    <div className="p-4">
-      <h1 className="text-3xl font-bold text-center mb-6">
-        Counselor Dashboard for {user.school}
-      </h1>
+    <div className="min-h-screen bg-gray-50 p-6">
+      {/* Header with title + Sign out */}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold text-gray-800">
+          Counselor Dashboard for <span className="text-indigo-600">{user.school}</span>
+        </h1>
+        <button
+          onClick={handleSignOut}
+          className="flex items-center gap-2 text-gray-600 hover:text-red-500 transition"
+          title="Sign Out"
+        >
+          <LogOut className="w-5 h-5" />
+        </button>
+      </div>
 
-      <div className="mb-4 text-center">
-        <label htmlFor="daysInput" className="mr-2 font-semibold">
-          Show average over last
-        </label>
+      {/* Mood filter control */}
+      <div className="flex items-center gap-2 mb-4 text-sm text-gray-700">
+        <span>Show average over last</span>
         <input
-          id="daysInput"
           type="number"
-          min="1"
-          max="30"
-          value={averageDays}
-          onChange={(e) => setAverageDays(Number(e.target.value))}
-          className="border p-1 rounded w-20 text-center"
+          defaultValue={5}
+          className="border border-gray-300 rounded px-2 py-1 w-16 focus:outline-none focus:ring-1 focus:ring-indigo-500"
         />
-        <span className="ml-2">days</span>
+        <span>days</span>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="min-w-full border-collapse">
-          <thead>
-            <tr className="bg-gray-200">
-              <th className="border p-2">Name</th>
-              <th className="border p-2">Student ID</th>
-              <th className="border p-2">Today's Mood</th>
-              <th className="border p-2">
-                Average Mood (Last {averageDays} Days)
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {students.map((student) => (
-              <tr key={student.id} className="text-center">
-                <td className="border p-2">{student.name}</td>
-                <td className="border p-2">{student.studentId}</td>
-                <td className="border p-2">
-                  <span className="text-3xl">{student.todaysMood.emoji}</span>
-                  <br />
-                  <span>{student.todaysMood.label}</span>
-                </td>
-                <td className="border p-2">
-                  {calcAverage(student.moodHistory, averageDays)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {/* Mood table */}
+      <table className="w-full text-left bg-white shadow-sm rounded overflow-hidden">
+        <thead className="bg-indigo-100 text-gray-700 text-sm">
+          <tr>
+            <th className="px-4 py-2">Name</th>
+            <th className="px-4 py-2">Student ID</th>
+            <th className="px-4 py-2">Today's Mood</th>
+            <th className="px-4 py-2">Average Mood (Last 5 Days)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {/* Render rows here */}
+          <tr className="border-t hover:bg-indigo-50 transition">
+            <td className="px-4 py-2">Anna L.</td>
+            <td className="px-4 py-2">123456</td>
+            <td className="px-4 py-2">🙂</td>
+            <td className="px-4 py-2">🙂</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   );
 }
