@@ -3,12 +3,9 @@ import {
   getFirestore,
   collection,
   getDocs,
-  setDoc,
-  doc,
-  addDoc,
   query,
   orderBy,
-  limit
+  limit,
 } from 'firebase/firestore';
 import { getAuth, signOut } from 'firebase/auth';
 import { LogOut } from 'lucide-react';
@@ -19,7 +16,7 @@ const moodScoreMap = {
   '😟': 2,
   '🙂': 3,
   '😄': 4,
-  '😁': 5
+  '😁': 5,
 };
 
 export default function AdminDashboard({ user }) {
@@ -33,21 +30,30 @@ export default function AdminDashboard({ user }) {
     const studentData = await Promise.all(
       studentSnap.docs.map(async (docSnap) => {
         const student = docSnap.data();
-        const moodsRef = collection(db, 'schools', user.school, 'students', docSnap.id, 'moods');
+        const moodsRef = collection(
+          db,
+          'schools',
+          user.school,
+          'students',
+          docSnap.id,
+          'moods'
+        );
         const moodsQuery = query(moodsRef, orderBy('date', 'desc'), limit(5));
         const moodSnap = await getDocs(moodsQuery);
 
         const moodEntries = moodSnap.docs.map((d) => d.data());
+
         const averageMood =
           moodEntries.length > 0
-            ? moodEntries.reduce((acc, m) => acc + (m.score || 3), 0) / moodEntries.length
+            ? moodEntries.reduce((acc, m) => acc + (m.score || 3), 0) /
+              moodEntries.length
             : null;
 
         return {
           id: docSnap.id,
           ...student,
           moods: moodEntries,
-          averageMood
+          averageMood,
         };
       })
     );
@@ -55,13 +61,11 @@ export default function AdminDashboard({ user }) {
     const sorted = studentData.sort(
       (a, b) => (a.averageMood ?? 99) - (b.averageMood ?? 99)
     );
-
-    console.log('✅ Students pulled from Firestore:', sorted);
     setStudents(sorted);
   };
 
   useEffect(() => {
-    fetchStudentsWithMoods().catch((err) => console.error('Error loading students:', err));
+    fetchStudentsWithMoods();
   }, []);
 
   const handleSignOut = async () => {
@@ -70,11 +74,11 @@ export default function AdminDashboard({ user }) {
   };
 
   return (
-    <div className="min-h-screen p-6 bg-gradient-to-br from-[#ffdee9] to-[#b5fffc]">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+    <div className="min-h-screen bg-gradient-to-br from-pink-100 to-blue-100 p-6">
+      <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-800">
-          Counselor Dashboard for <span className="text-indigo-600">{user.school}</span>
+          Counselor Dashboard for{' '}
+          <span className="text-indigo-600">{user.school}</span>
         </h1>
         <button
           onClick={handleSignOut}
@@ -84,15 +88,8 @@ export default function AdminDashboard({ user }) {
         </button>
       </div>
 
-      {/* Fallback if empty */}
-      {students.length === 0 && (
-        <p className="text-center text-gray-500 text-lg mt-10">
-          No students found. Try uploading a CSV or check Firestore rules.
-        </p>
-      )}
-
       {/* Student Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {students.map((s, i) => (
           <div
             key={i}
@@ -105,24 +102,32 @@ export default function AdminDashboard({ user }) {
                 : 'border-green-400'
             )}
           >
-            <h2 className="text-xl font-semibold text-indigo-800 mb-1">{s.name}</h2>
+            <h2 className="text-lg font-semibold text-indigo-800">{s.name}</h2>
             <p className="text-sm text-gray-600">ID: {s.studentId}</p>
             <p className="text-sm text-gray-600">Grade: {s.grade}</p>
             <p className="text-sm text-gray-600">Birthday: {s.birthday}</p>
 
             <div className="mt-3">
-              <p className="text-sm font-medium text-gray-700 mb-1">Last 5 Moods:</p>
+              <p className="text-sm font-medium text-gray-700 mb-1">
+                Last 5 Moods:
+              </p>
               <div className="flex gap-2 text-2xl">
                 {s.moods.length > 0 ? (
-                  s.moods.map((mood, idx) => <span key={idx}>{mood.emoji}</span>)
+                  s.moods.map((m, idx) => (
+                    <span key={idx}>{m.emoji || '❓'}</span>
+                  ))
                 ) : (
-                  <span className="text-gray-400 text-sm italic">No mood data</span>
+                  <span className="text-sm text-gray-400 italic">
+                    No mood data
+                  </span>
                 )}
               </div>
             </div>
 
             {s.averageMood !== null && (
-              <p className="mt-2 text-sm text-gray-500">Avg mood: {s.averageMood.toFixed(2)}</p>
+              <p className="mt-2 text-sm text-gray-500">
+                Avg mood: {s.averageMood.toFixed(2)}
+              </p>
             )}
           </div>
         ))}
