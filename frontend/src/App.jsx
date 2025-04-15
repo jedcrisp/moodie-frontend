@@ -9,6 +9,7 @@ import { getFirestore, doc, getDoc } from 'firebase/firestore';
 export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   const getSchoolFromSubdomain = () => {
     const hostname = window.location.hostname;
@@ -58,14 +59,15 @@ export default function App() {
     });
 
     useEffect(() => {
-  if (!loading && user) {
-    if (user.role === 'counselor') {
+  if (!loading && user && user.school === currentSchool) {
+    if (user.role === 'counselor' && window.location.pathname !== '/admin') {
       navigate('/admin');
-    } else if (user.role === 'student') {
+    } else if (user.role === 'student' && window.location.pathname !== '/') {
       navigate('/');
     }
   }
-}, [loading, user, navigate]);
+}, [user, loading, currentSchool, navigate]);
+
 
 
     return () => {
