@@ -26,7 +26,6 @@ export default function AdminDashboard({ user }) {
   const [students, setStudents] = useState([]);
   const db = getFirestore();
 
-  // Fetch existing students from Firestore
   const fetchStudentsWithMoods = async () => {
     const studentRef = collection(db, 'schools', user.school, 'students');
     const studentSnap = await getDocs(studentRef);
@@ -56,6 +55,8 @@ export default function AdminDashboard({ user }) {
     const sorted = studentData.sort(
       (a, b) => (a.averageMood ?? 99) - (b.averageMood ?? 99)
     );
+
+    console.log('✅ Students pulled from Firestore:', sorted);
     setStudents(sorted);
   };
 
@@ -66,53 +67,6 @@ export default function AdminDashboard({ user }) {
   const handleSignOut = async () => {
     await signOut(getAuth());
     window.location.reload();
-  };
-
-  // Upload CSV and populate Firestore
-  const handleCSVUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const text = event.target.result;
-      const lines = text.split('\n').slice(1); // skip header
-
-      for (const row of lines) {
-        const [name, grade, studentId, birthday, moodsRaw] = row.split(',');
-        if (!name || !studentId) continue;
-
-        const studentRef = doc(db, 'schools', user.school, 'students', studentId.trim());
-        await setDoc(studentRef, {
-          name: name.trim(),
-          grade: grade.trim(),
-          studentId: studentId.trim(),
-          birthday: birthday.trim()
-        });
-
-        const moods = moodsRaw.trim().split('');
-        const moodsCol = collection(studentRef, 'moods');
-
-        for (let i = 0; i < moods.length; i++) {
-          const emoji = moods[i];
-          const score = moodScoreMap[emoji] || 3;
-
-          const moodDate = new Date();
-          moodDate.setDate(moodDate.getDate() - i);
-
-          await addDoc(moodsCol, {
-            emoji,
-            score,
-            date: moodDate.toISOString().split('T')[0],
-          });
-        }
-      }
-
-      console.log('✅ CSV upload complete');
-      fetchStudentsWithMoods(); // refresh UI
-    };
-
-    reader.readAsText(file);
   };
 
   return (
@@ -130,18 +84,14 @@ export default function AdminDashboard({ user }) {
         </button>
       </div>
 
-      {/* Upload */}
-      <div className="mb-6">
-        <label className="block mb-2 text-gray-700 font-medium">Upload student CSV:</label>
-        <input
-          type="file"
-          accept=".csv"
-          onChange={handleCSVUpload}
-          className="file:py-2 file:px-4 file:rounded-lg file:border file:border-gray-300 file:text-sm file:bg-white file:text-gray-700"
-        />
-      </div>
+      {/* Fallback if empty */}
+      {students.length === 0 && (
+        <p className="text-center text-gray-500 text-lg mt-10">
+          No students found. Try uploading a CSV or check Firestore rules.
+        </p>
+      )}
 
-      {/* Student Mood Cards */}
+      {/* Student Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {students.map((s, i) => (
           <div
@@ -163,9 +113,11 @@ export default function AdminDashboard({ user }) {
             <div className="mt-3">
               <p className="text-sm font-medium text-gray-700 mb-1">Last 5 Moods:</p>
               <div className="flex gap-2 text-2xl">
-                {s.moods.map((mood, idx) => (
-                  <span key={idx}>{mood.emoji}</span>
-                ))}
+                {s.moods.length > 0 ? (
+                  s.moods.map((mood, idx) => <span key={idx}>{mood.emoji}</span>)
+                ) : (
+                  <span className="text-gray-400 text-sm italic">No mood data</span>
+                )}
               </div>
             </div>
 
