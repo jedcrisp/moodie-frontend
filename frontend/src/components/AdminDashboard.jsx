@@ -1,258 +1,123 @@
-import React, { useEffect, useState } from 'react';
-import {
-  getFirestore,
-  collection,
-  getDocs,
-  query,
-  orderBy,
-  limit,
-} from 'firebase/firestore';
-import { getAuth, signOut } from 'firebase/auth';
-import { LogOut } from 'lucide-react';
-import clsx from 'clsx';
+import React, { useState, useEffect } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import MoodSelector from './components/MoodSelector.jsx';
+import AdminDashboard from './components/AdminDashboard';
+import SignIn from './components/SignIn';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
 
-const moodScoreMap = {
-  '😠': 1,
-  '😟': 2,
-  '🙂': 3,
-  '😄': 4,
-  '😁': 5,
-};
+export default function App() {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-export default function AdminDashboard({ user }) {
-  const [students, setStudents] = useState([]);
-  const db = getFirestore();
-
-  const fetchStudentsWithMoods = async () => {
-    const studentRef = collection(db, 'schools', user.school, 'students');
-    const studentSnap = await getDocs(studentRef);
-
-    const studentData = await Promise.all(
-      studentSnap.docs.map(async (docSnap) => {
-        const student = docSnap.data();
-        const moodsRef = collection(
-          db,
-          'schools',
-          user.school,
-          'students',
-          docSnap.id,
-          'moods'
-        );
-        const moodsQuery = query(moodsRef, orderBy('date', 'desc'), limit(5));
-        const moodSnap = await getDocs(moodsQuery);
-
-        const moodEntries = moodSnap.docs.map((d) => d.data());
-
-        const averageMood =
-          moodEntries.length > 0
-            ? moodEntries.reduce((acc, m) => acc + (m.score || 3), 0) /
-              moodEntries.length
-            : null;
-
-        return {
-          id: docSnap.id,
-          ...student,
-          moods: moodEntries,
-          averageMood,
-        };
-      })
-    );
-
-    const sorted = studentData.sort(
-      (a, b) => (a.averageMood ?? 99) - (b.averageMood ?? 99)
-    );
-    setStudents(sorted);
+  const getSchoolFromSubdomain = () => {
+    const hostname = window.location.hostname;
+    const parts = hostname.split('.');
+    if (hostname === 'localhost' || hostname.includes('127.0.0.1')) {
+      return 'TestSchool';
+    }
+    return parts[0];
   };
+
+  const currentSchool = getSchoolFromSubdomain();
 
   useEffect(() => {
-    fetchStudentsWithMoods();
-  }, []);
+    const auth = getAuth();
+    const db = getFirestore();
 
-  const handleSignOut = async () => {
-    await signOut(getAuth());
-    window.location.reload();
-  };
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      console.log('Auth state changed:', currentUser ? currentUser.uid : null);
+      if (currentUser) {
+        try {
+          // Check users collection for counselor role
+          const userDocRef = doc(db, 'schools', currentSchool, 'users', currentUser.uid);
+          const userDoc = await getDoc(userDocRef);
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-100 to-blue-100 p-6">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">
-          Counselor Dashboard for{' '}
-          <span className="text-indigo-600">{user.school}</span>
-        </h1>
-        <button
-          onClick={handleSignOut}
-          className="bg-white p-2 rounded-lg shadow hover:bg-red-100 transition"
-        >
-          <LogOut className="w-5 h-5 text-gray-600" />
-        </button>
-      </div>
+          if (userDoc.exists()) {
+            const userData = {
+              role: userDoc.data().role || 'student',
+              name: currentUser.displayName || 'User',
+              uid: currentUser.uid,
+              school: currentSchool,
+              studentId: userDoc.data().studentId || null,
+            };
+            setUser(userData);
+            console.log('Set user:', userData);
+          } else {
+            // Check students collection
+            const studentDocRef = doc(db, 'schools', currentSchool, 'students', currentUser.uid);
+            const studentDoc = await getDoc(studentDocRef);
 
-      {/* Student Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-  {students.map((s, i) => (
-    <div
-      key={i}
-      className={clsx(
-        'p-4 rounded-xl shadow bg-white border-l-8',
-        s.averageMood <= 2 ? 'border-red-400' :
-        s.averageMood <= 3 ? 'border-yellow-400' :
-        'border-green-400'
-      )}
-    >åimport React, { useEffect, useState } from 'react';
-import {
-  getFirestore,
-  collection,
-  getDocs,
-  query,
-  orderBy,
-  limit,
-} from 'firebase/firestore';
-import { getAuth, signOut } from 'firebase/auth';
-import { LogOut } from 'lucide-react';
-import clsx from 'clsx';
+            if (studentDoc.exists()) {
+              const userData = {
+                role: 'student',
+                name: studentDoc.data().name || 'User',
+                uid: currentUser.uid,
+                school: currentSchool,
+                studentId: studentDoc.data().studentId || null,
+              };
+              setUser(userData);
+              console.log('Set user:', userData);
+            } else {
+              console.log('User not found in school:', currentSchool);
+              setUser(null);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+          setUser(null);
+        }
+      } else {
+        setUser(null);
+        console.log('No user signed in');
+      }
+      setLoading(false);
+    });
 
-const moodScoreMap = {
-  '😠': 1,
-  '😟': 2,
-  '🙂': 3,
-  '😄': 4,
-  '😁': 5,
-};
+    return () => {
+      console.log('Unsubscribing auth listener');
+      unsubscribe();
+    };
+  }, [currentSchool]);
 
-export default function AdminDashboard({ user }) {
-  const [students, setStudents] = useState([]);
-  const db = getFirestore();
+  if (loading) {
+    console.log('Loading auth state...');
+    return <div>Loading...</div>;
+  }
 
-  const fetchStudentsWithMoods = async () => {
-    const studentRef = collection(db, 'schools', user.school, 'students');
-    const studentSnap = await getDocs(studentRef);
-
-    const studentData = await Promise.all(
-      studentSnap.docs.map(async (docSnap) => {
-        const student = docSnap.data();
-        const moodsRef = collection(
-          db,
-          'schools',
-          user.school,
-          'students',
-          docSnap.id,
-          'moods'
-        );
-        const moodsQuery = query(moodsRef, orderBy('date', 'desc'), limit(5));
-        const moodSnap = await getDocs(moodsQuery);
-
-        const moodEntries = moodSnap.docs.map((d) => d.data());
-
-        const averageMood =
-          moodEntries.length > 0
-            ? moodEntries.reduce((acc, m) => acc + (m.score || 3), 0) /
-              moodEntries.length
-            : null;
-
-        return {
-          id: docSnap.id,
-          ...student,
-          moods: moodEntries,
-          averageMood,
-        };
-      })
-    );
-
-    const sorted = studentData.sort(
-      (a, b) => (a.averageMood ?? 99) - (b.averageMood ?? 99)
-    );
-    setStudents(sorted);
-  };
-
-  useEffect(() => {
-    fetchStudentsWithMoods();
-  }, []);
-
-  const handleSignOut = async () => {
-    await signOut(getAuth());
-    window.location.reload();
-  };
+  console.log('Rendering with user:', user);
+  console.log('Current path:', window.location.pathname);
+  console.log('Current school:', currentSchool);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-100 to-blue-100 p-6">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">
-          Counselor Dashboard for{' '}
-          <span className="text-indigo-600">{user.school}</span>
-        </h1>
-        <button
-          onClick={handleSignOut}
-          className="bg-white p-2 rounded-lg shadow hover:bg-red-100 transition"
-        >
-          <LogOut className="w-5 h-5 text-gray-600" />
-        </button>
-      </div>
-
-      {/* Student Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {students.map((s, i) => (
-          <div
-            key={i}
-            className={clsx(
-              'p-4 rounded-xl shadow bg-white border-l-8',
-              s.averageMood <= 2
-                ? 'border-red-400'
-                : s.averageMood <= 3
-                ? 'border-yellow-400'
-                : 'border-green-400'
-            )}
-          >
-            <h2 className="text-xl font-semibold text-indigo-800 mb-1">{s.name}</h2>
-            <p className="text-sm text-gray-600">ID: {s.studentId}</p>
-            <p className="text-sm text-gray-600">Grade: {s.grade}</p>
-            <p className="text-sm text-gray-600">Birthday: {s.birthday}</p>
-
-            <div className="mt-3">
-              <p className="text-sm font-medium text-gray-700 mb-1">Last 5 Moods:</p>
-              <div className="flex gap-2 text-2xl">
-                {s.moods.map((mood, idx) => (
-                  <span key={idx}>{mood.emoji || '😐'}</span>
-                ))}
+    <Routes>
+      {user && user.role === 'student' && user.school === currentSchool && (
+        <>
+          <Route
+            path="/"
+            element={
+              <div className="h-screen w-screen flex flex-col items-center justify-center bg-gradient-to-br from-rose-200 to-blue-200">
+                <MoodSelector user={user} onSelect={(mood) => console.log('Selected mood:', mood)} />
               </div>
-            </div>
-
-            {s.averageMood !== null && (
-              <p className="mt-2 text-sm text-gray-500">
-                Avg mood: {s.averageMood.toFixed(2)}
-              </p>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-      <h2 className="text-xl font-semibold text-indigo-800 mb-1">{s.name}</h2>
-      <p className="text-sm text-gray-600">ID: {s.studentId}</p>
-      <p className="text-sm text-gray-600">Grade: {s.grade}</p>
-      <p className="text-sm text-gray-600">Birthday: {s.birthday}</p>
-
-      <div className="mt-3">
-        <p className="text-sm font-medium text-gray-700 mb-1">Last 5 Moods:</p>
-        <div className="flex gap-2 text-2xl">
-          {s.moods.map((mood, idx) => (
-            <span key={idx}>{mood.emoji}</span>
-          ))}
-        </div>
-      </div>
-
-      {s.averageMood !== null && (
-        <p className="mt-2 text-sm text-gray-500">
-          Avg mood: {s.averageMood.toFixed(2)}
-        </p>
+            }
+          />
+          <Route path="/signin" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </>
       )}
-    </div>
-  ))}
-</div>
-
-      </div>
-    </div>
+      {user && user.role === 'counselor' && user.school === currentSchool && (
+        <>
+          <Route path="/admin" element={<AdminDashboard user={user} />} />
+          <Route path="/signin" element={<Navigate to="/admin" replace />} />
+          <Route path="*" element={<Navigate to="/admin" replace />} />
+        </>
+      )}
+      {(!user || user.school !== currentSchool) && (
+        <>
+          <Route path="/signin" element={<SignIn currentSchool={currentSchool} />} />
+          <Route path="*" element={<Navigate to="/signin" replace />} />
+        </>
+      )}
+    </Routes>
   );
 }
