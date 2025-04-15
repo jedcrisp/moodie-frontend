@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'; // ✅ make sure useNavigate is imported
 import MoodSelector from './components/MoodSelector.jsx';
 import AdminDashboard from './components/AdminDashboard';
 import SignIn from './components/SignIn';
@@ -9,7 +9,7 @@ import { getFirestore, doc, getDoc } from 'firebase/firestore';
 export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+  const navigate = useNavigate(); // ✅ properly declared here
 
   const getSchoolFromSubdomain = () => {
     const hostname = window.location.hostname;
@@ -22,6 +22,7 @@ export default function App() {
 
   const currentSchool = getSchoolFromSubdomain();
 
+  // ✅ Auth state + Firestore user fetch
   useEffect(() => {
     const auth = getAuth();
     const db = getFirestore();
@@ -58,23 +59,22 @@ export default function App() {
       setLoading(false);
     });
 
-    useEffect(() => {
-  if (!loading && user && user.school === currentSchool) {
-    if (user.role === 'counselor' && window.location.pathname !== '/admin') {
-      navigate('/admin');
-    } else if (user.role === 'student' && window.location.pathname !== '/') {
-      navigate('/');
-    }
-  }
-}, [user, loading, currentSchool, navigate]);
-
-
-
     return () => {
       console.log('Unsubscribing auth listener');
       unsubscribe();
     };
   }, [currentSchool]);
+
+  // ✅ Redirect after user is loaded
+  useEffect(() => {
+    if (!loading && user && user.school === currentSchool) {
+      if (user.role === 'counselor' && window.location.pathname !== '/admin') {
+        navigate('/admin');
+      } else if (user.role === 'student' && window.location.pathname !== '/') {
+        navigate('/');
+      }
+    }
+  }, [user, loading, currentSchool, navigate]);
 
   if (loading) {
     console.log('Loading auth state...');
