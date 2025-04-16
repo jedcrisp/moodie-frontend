@@ -39,6 +39,7 @@ export default function SignIn({ currentSchool }) {
   const handleGoogleSignIn = async () => {
     const provider = new GoogleAuthProvider();
     const db = getFirestore();
+
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
@@ -84,7 +85,16 @@ export default function SignIn({ currentSchool }) {
         }
       }
 
-      navigate('/');
+      // ✅ Redirect based on role after login
+      const finalUserDoc = await getDoc(userDocRef);
+      const role = finalUserDoc.exists() ? finalUserDoc.data().role : 'student';
+
+      if (role === 'counselor') {
+        navigate('/admin');
+      } else {
+        navigate('/');
+      }
+
     } catch (err) {
       console.error('Google Sign-In Error:', err);
       alert('Failed to sign in. Please try again.');
@@ -133,13 +143,13 @@ export default function SignIn({ currentSchool }) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '12px', // Increased gap for better spacing
+            gap: '12px',
             width: '100%',
-            padding: '0.75rem 1.5rem', // Added more horizontal padding
+            padding: '0.75rem 1.5rem',
             backgroundColor: '#fff',
             border: '1px solid #ccc',
             borderRadius: '9999px',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)', // Added subtle shadow
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
             cursor: 'pointer',
             transition: 'box-shadow 0.2s',
             fontSize: '1rem',
@@ -152,7 +162,7 @@ export default function SignIn({ currentSchool }) {
           }}
         >
           <svg
-            style={{ width: '20px', height: '20px' }} // Reduced icon size for better proportion
+            style={{ width: '20px', height: '20px' }}
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 48 48"
           >
