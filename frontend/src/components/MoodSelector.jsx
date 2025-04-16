@@ -3,11 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { getAuth, signOut } from 'firebase/auth';
 
 const moods = [
-  { emoji: "😄", label: "Happy" },
-  { emoji: "🙂", label: "Okay" },
+  { emoji: "😁", label: "Happy" },
+  { emoji: "😄", label: "Okay" },
   { emoji: "😟", label: "Sad" },
+  { emoji: "😟", label: "Upset" },
   { emoji: "😠", label: "Angry" },
-  { emoji: "😴", label: "Tired" },
 ];
 
 // Short and kid-friendly messages:
