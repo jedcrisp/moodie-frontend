@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { getFirestore, collection, addDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import clsx from 'clsx'; // Added missing import
 
 export default function MoodSelector({ user, onSelect }) {
   const [selectedMood, setSelectedMood] = useState(null);
@@ -22,7 +23,7 @@ export default function MoodSelector({ user, onSelect }) {
       await addDoc(collection(db, 'schools', user.school, 'students', user.uid, 'moods'), {
         emoji: mood.emoji,
         score: mood.score,
-        date: new Date().toISOString().split('T')[0], // e.g., "2025-04-15"
+        date: new Date().toISOString().split('T')[0],
       });
       if (onSelect) onSelect(mood);
     } catch (error) {
