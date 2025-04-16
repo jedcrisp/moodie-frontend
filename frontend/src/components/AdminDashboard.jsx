@@ -6,10 +6,14 @@ import {
   query,
   orderBy,
   limit,
+  doc,
+  setDoc,
 } from 'firebase/firestore';
 import { getAuth, signOut } from 'firebase/auth';
-import { LogOut } from 'lucide-react';
+import { LogOut, Upload, Smile } from 'lucide-react';
+import { useNavigate } from 'react-router-dom'; // Added for routing
 import clsx from 'clsx';
+import Papa from 'papaparse';
 
 const moodScoreMap = {
   '😠': 1,
@@ -23,6 +27,7 @@ export default function AdminDashboard({ user }) {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const db = getFirestore();
+  const navigate = useNavigate(); // For routing to MoodSelector
 
   const fetchStudentsWithMoods = async () => {
     try {
@@ -84,24 +89,87 @@ export default function AdminDashboard({ user }) {
     window.location.reload();
   };
 
+  const handleCsvUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    Papa.parse(file, {
+      header: true,
+      complete: async (results) => {
+        const rows = results?.data;
+        if (!Array.isArray(rows)) {
+          console.error("Invalid CSV format: missing or malformed data");
+          return;
+        }
+
+        for (const row of rows) {
+          if (!row.studentId || !row.name) continue;
+          const studentRef = doc(db, 'schools', user.school, 'students', row.studentId);
+          await setDoc(studentRef, {
+            name: row.name,
+            studentId: row.studentId,
+            grade: row.grade,
+            birthday: row.birthday,
+          });
+        }
+
+        fetchStudentsWithMoods();
+      },
+      error: (err) => {
+        console.error("CSV parse error:", err);
+      },
+    });
+  };
+
+  const handleMoodSelectorRedirect = () => {
+    navigate('/'); // Routes to MoodSelector page
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-200 to-blue-200">
-      <header className="bg-white shadow-lg rounded-b-xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+    <div
+      className="min-h-screen"
+      style={{
+        backgroundImage: `
+          linear-gradient(to bottom right, rgba(255, 182, 193, 0.3), rgba(173, 216, 230, 0.3)),
+          radial-gradient(circle at 20% 30%, rgba(255, 182, 193, 0.5), transparent 50%),
+          radial-gradient(circle at 80% 70%, rgba(173, 216, 230, 0.5), transparent 50%),
+          radial-gradient(circle at 50% 50%, rgba(255, 228, 181, 0.4), transparent 50%)
+        `,
+        backgroundBlendMode: 'overlay',
+      }}
+    >
+      {/* Top Right Buttons */}
+      <div className="fixed top-4 right-4 flex items-center gap-3 z-10">
+        <label className="flex items-center gap-2 px-4 py-2 bg-white border border-purple-500 rounded-full text-purple-600 font-medium cursor-pointer hover:bg-purple-50 transition">
+          <Upload className="w-5 h-5" />
+          <span>Upload CSV</span>
+          <input
+            type="file"
+            accept=".csv"
+            className="hidden"
+            onChange={handleCsvUpload}
+          />
+        </label>
+        <button
+          onClick={handleSignOut}
+          className="flex items-center gap-2 px-4 py-2 bg-pink-500 text-white rounded-full hover:bg-pink-600 transition transform hover:scale-105"
+          title="Sign Out"
+        >
+          <LogOut className="w-5 h-5" />
+          <span>Sign Out</span>
+        </button>
+      </div>
+
+      {/* Header */}
+      <header className="bg-transparent">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">
             Moodie Dashboard: {user.school}
           </h1>
-          <button
-            onClick={handleSignOut}
-            className="flex items-center gap-2 px-4 py-2 bg-pink-500 text-white rounded-full hover:bg-pink-600 transition transform hover:scale-105"
-            title="Sign Out"
-          >
-            <LogOut className="w-5 h-5" />
-            <span>Sign Out</span>
-          </button>
         </div>
       </header>
 
+      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {loading ? (
           <div className="text-center py-12">
@@ -116,81 +184,106 @@ export default function AdminDashboard({ user }) {
             </p>
           </div>
         ) : (
-          <div className="bg-white shadow-xl rounded-2xl overflow-hidden p-4">
-            <h2 className="text-2xl font-bold text-gray-800 mb-1">
-              Student Mood Overview
-            </h2>
-            <p className="text-sm text-gray-600 mb-4">
-              Sorted to highlight students needing support first 🌟
-            </p>
-
+          <div className="bg-white shadow-xl rounded-2xl overflow-hidden">
+            <div className="px-6 py-5 flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800">
+                  Student Mood Overview
+                </h2>
+                <p className="mt-1 text-sm text-gray-600">
+                  Sorted to highlight students needing support first 🌟
+                </p>
+              </div>
+              <button
+                onClick={handleMoodSelectorRedirect}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-500 text-white rounded-full hover:bg-purple-600 transition transform hover:scale-105"
+                title="Go to Mood Selector"
+              >
+                <Smile className="w-5 h-5" />
+                <span>Mood Selector</span>
+              </button>
+            </div>
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
+              <table className="min-w-full divide-y divide-gray-300">
                 <thead className="bg-gradient-to-r from-purple-100 to-pink-100">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-purple-700 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-purple-700 uppercase tracking-wider border-r border-gray-300">
                       Name
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-purple-700 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-purple-700 uppercase tracking-wider border-r border-gray-300">
                       Student ID
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-purple-700 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-purple-700 uppercase tracking-wider border-r border-gray-300">
                       Grade
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-purple-700 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-purple-700 uppercase tracking-wider border-r border-gray-300">
                       Birthday
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-purple-700 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-purple-700 uppercase tracking-wider border-r border-gray-300">
                       Last 5 Moods
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-purple-700 uppercase tracking-wider">
-                      Avg Mood
+                      Average Mood
                     </th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="bg-white divide-y divide-gray-200">
                   {students.map((student) => (
                     <tr
                       key={student.id}
                       className={clsx(
-                        'bg-white rounded-lg border border-gray-200 shadow-sm my-2',
-                        student.averageMood <= 2
-                          ? 'border-red-300'
-                          : student.averageMood <= 3
-                          ? 'border-yellow-300'
-                          : 'border-green-300'
+                        'transition hover:bg-gray-50',
+                        student.averageMood !== null && student.averageMood <= 2
+                          ? 'border-l-4 border-red-500'
+                          : student.averageMood !== null && student.averageMood <= 3
+                          ? 'border-l-4 border-yellow-500'
+                          : 'border-l-4 border-green-500'
                       )}
                     >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 border-r border-gray-200">
                         {student.name}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {student.studentId}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 border-r border-gray-200">
+                        {student.studentId || 'N/A'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {student.grade}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 border-r border-gray-200">
+                        {student.grade || 'N/A'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {student.birthday}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 border-r border-gray-200">
+                        {student.birthday || 'N/A'}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
+                      <td className="px-6 py-4 text-sm text-gray-600 border-r border-gray-200">
                         <div className="flex gap-2 text-2xl">
-                          {student.moods.map((mood, idx) => (
-                            <span key={idx}>{mood.emoji}</span>
-                          ))}
+                          {student.moods.length > 0 ? (
+                            student.moods.map((mood, idx) => (
+                              <span
+                                key={idx}
+                                className="transition transform hover:scale-125"
+                                title={mood.date}
+                              >
+                                {mood.emoji}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-sm text-gray-500">
+                              No moods yet 😴
+                            </span>
+                          )}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <span
                           className={clsx(
-                            student.averageMood <= 2
-                              ? 'text-red-500'
-                              : student.averageMood <= 3
-                              ? 'text-yellow-500'
-                              : 'text-green-500'
+                            student.averageMood !== null && student.averageMood <= 2
+                              ? 'text-red-600'
+                              : student.averageMood !== null && student.averageMood <= 3
+                              ? 'text-yellow-600'
+                              : 'text-green-600'
                           )}
                         >
-                          {student.averageMood?.toFixed(2) ?? 'N/A'}
+                          {student.averageMood !== null
+                            ? student.averageMood.toFixed(2)
+                            : 'N/A'}
                         </span>
                       </td>
                     </tr>
