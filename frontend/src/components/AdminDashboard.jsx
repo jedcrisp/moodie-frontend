@@ -11,8 +11,8 @@ import {
 } from 'firebase/firestore';
 import { getAuth, signOut } from 'firebase/auth';
 import { LogOut, Upload, Smile } from 'lucide-react';
-import { useNavigate } from 'react-router-dom'; // Added for routing
-import clsx from 'clsx';
+import { useNavigate } from 'react-router-dom';
+import clsx from 'clsx'; // Ensure clsx is imported
 import Papa from 'papaparse';
 
 const moodScoreMap = {
@@ -27,7 +27,7 @@ export default function AdminDashboard({ user }) {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const db = getFirestore();
-  const navigate = useNavigate(); // For routing to MoodSelector
+  const navigate = useNavigate();
 
   const fetchStudentsWithMoods = async () => {
     try {
@@ -122,7 +122,7 @@ export default function AdminDashboard({ user }) {
   };
 
   const handleMoodSelectorRedirect = () => {
-    navigate('/'); // Routes to MoodSelector page
+    navigate('/');
   };
 
   return (
@@ -138,7 +138,6 @@ export default function AdminDashboard({ user }) {
         backgroundBlendMode: 'overlay',
       }}
     >
-      {/* Top Right Buttons */}
       <div className="fixed top-4 right-4 flex items-center gap-3 z-10">
         <label className="flex items-center gap-2 px-4 py-2 bg-white border border-purple-500 rounded-full text-purple-600 font-medium cursor-pointer hover:bg-purple-50 transition">
           <Upload className="w-5 h-5" />
@@ -160,7 +159,6 @@ export default function AdminDashboard({ user }) {
         </button>
       </div>
 
-      {/* Header */}
       <header className="bg-transparent">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">
@@ -169,7 +167,6 @@ export default function AdminDashboard({ user }) {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {loading ? (
           <div className="text-center py-12">
