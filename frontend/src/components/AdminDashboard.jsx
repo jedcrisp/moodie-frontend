@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import {
   getFirestore,
   collection,
@@ -12,24 +12,15 @@ import {
 import { getAuth, signOut } from 'firebase/auth';
 import { LogOut, Upload, Smile } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import clsx from 'clsx';
 import Papa from 'papaparse';
-import { useContext } from 'react';
 import { SchoolContext } from '../context/SchoolContext';
-
-const moodScoreMap = {
-  '😠': 1,
-  '😟': 2,
-  '🙂': 3,
-  '😄': 4,
-  '😁': 5,
-};
 
 export default function AdminDashboard({ user }) {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const db = getFirestore();
   const navigate = useNavigate();
+  const { displayName } = useContext(SchoolContext);
 
   const fetchStudentsWithMoods = async () => {
     try {
@@ -80,14 +71,6 @@ export default function AdminDashboard({ user }) {
     }
   };
 
-  function SignIn(...) {
-  const { displayName } = useContext(SchoolContext);
-  return (
-    <h1>Signing in for {displayName}</h1>
-    // …
-  );
-}
-
   useEffect(() => {
     if (user && user.school) {
       fetchStudentsWithMoods();
@@ -99,7 +82,7 @@ export default function AdminDashboard({ user }) {
     window.location.reload();
   };
 
-  const handleCsvUpload = async (e) => {
+  const handleCsvUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
@@ -108,7 +91,7 @@ export default function AdminDashboard({ user }) {
       complete: async (results) => {
         const rows = results?.data;
         if (!Array.isArray(rows)) {
-          console.error("Invalid CSV format: missing or malformed data");
+          console.error('Invalid CSV format: missing or malformed data');
           return;
         }
 
@@ -126,7 +109,7 @@ export default function AdminDashboard({ user }) {
         fetchStudentsWithMoods();
       },
       error: (err) => {
-        console.error("CSV parse error:", err);
+        console.error('CSV parse error:', err);
       },
     });
   };
@@ -156,22 +139,41 @@ export default function AdminDashboard({ user }) {
     >
       {/* Top Right Buttons */}
       <div style={{ position: 'fixed', top: '8px', right: '8px', display: 'flex', gap: '12px', zIndex: 10 }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', backgroundColor: 'white', border: '1px solid #A78BFA', borderRadius: '9999px', color: '#7C3AED', fontWeight: '500', cursor: 'pointer', transition: 'background-color 0.3s' }}
-          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#EDE9FE'}
-          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+        <label
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '8px 16px',
+            backgroundColor: 'white',
+            border: '1px solid #A78BFA',
+            borderRadius: '9999px',
+            color: '#7C3AED',
+            fontWeight: '500',
+            cursor: 'pointer',
+            transition: 'background-color 0.3s',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#EDE9FE')}
+          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'white')}
         >
           <Upload style={{ width: '20px', height: '20px' }} />
           <span>Upload CSV</span>
-          <input
-            type="file"
-            accept=".csv"
-            style={{ display: 'none' }}
-            onChange={handleCsvUpload}
-          />
+          <input type="file" accept=".csv" style={{ display: 'none' }} onChange={handleCsvUpload} />
         </label>
         <button
           onClick={handleMoodSelectorRedirect}
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', backgroundColor: '#8B5CF6', color: 'white', border: 'none', borderRadius: '9999px', cursor: 'pointer', transition: 'background-color 0.3s, transform 0.2s' }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '8px 16px',
+            backgroundColor: '#8B5CF6',
+            color: 'white',
+            border: 'none',
+            borderRadius: '9999px',
+            cursor: 'pointer',
+            transition: 'background-color 0.3s, transform 0.2s',
+          }}
           onMouseEnter={(e) => {
             e.currentTarget.style.backgroundColor = '#7C3AED';
             e.currentTarget.style.transform = 'scale(1.05)';
@@ -187,7 +189,18 @@ export default function AdminDashboard({ user }) {
         </button>
         <button
           onClick={handleSignOut}
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', backgroundColor: '#EC4899', color: 'white', border: 'none', borderRadius: '9999px', cursor: 'pointer', transition: 'background-color 0.3s, transform 0.2s' }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '8px 16px',
+            backgroundColor: '#EC4899',
+            color: 'white',
+            border: 'none',
+            borderRadius: '9999px',
+            cursor: 'pointer',
+            transition: 'background-color 0.3s, transform 0.2s',
+          }}
           onMouseEnter={(e) => {
             e.currentTarget.style.backgroundColor = '#DB2777';
             e.currentTarget.style.transform = 'scale(1.05)';
@@ -207,7 +220,7 @@ export default function AdminDashboard({ user }) {
       <header style={{ backgroundColor: 'transparent' }}>
         <div style={{ padding: '8px' }}>
           <h1 style={{ fontSize: '1.875rem', fontWeight: '800', backgroundImage: 'linear-gradient(to right, #7C3AED, #EC4899)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>
-            Moodie Dashboard: {user.school}
+            Moodie Dashboard: {displayName}
           </h1>
         </div>
       </header>
@@ -238,101 +251,5 @@ export default function AdminDashboard({ user }) {
                 </p>
               </div>
             </div>
-            <div style={{ flex: 1, overflowY: 'auto', overflowX: 'auto' }}>
-              <table style={{ width: '100%', height: '100%', borderCollapse: 'collapse' }}>
-                <thead style={{ backgroundImage: 'linear-gradient(to right, #EDE9FE, #FCE7F3)', position: 'sticky', top: 0, zIndex: 0 }}>
-                  <tr>
-                    <th style={{ padding: '8px 16px', textAlign: 'left', fontSize: '0.75rem', fontWeight: '600', color: '#7C3AED', textTransform: 'uppercase', letterSpacing: '0.05em', borderRight: '1px solid #D1D5DB' }}>
-                      Name
-                    </th>
-                    <th style={{ padding: '8px 16px', textAlign: 'left', fontSize: '0.75rem', fontWeight: '600', color: '#7C3AED', textTransform: 'uppercase', letterSpacing: '0.05em', borderRight: '1px solid #D1D5DB' }}>
-                      Student ID
-                    </th>
-                    <th style={{ padding: '8px 16px', textAlign: 'left', fontSize: '0.75rem', fontWeight: '600', color: '#7C3AED', textTransform: 'uppercase', letterSpacing: '0.05em', borderRight: '1px solid #D1D5DB' }}>
-                      Grade
-                    </th>
-                    <th style={{ padding: '8px 16px', textAlign: 'left', fontSize: '0.75rem', fontWeight: '600', color: '#7C3AED', textTransform: 'uppercase', letterSpacing: '0.05em', borderRight: '1px solid #D1D5DB' }}>
-                      Birthday
-                    </th>
-                    <th style={{ padding: '8px 16px', textAlign: 'left', fontSize: '0.75rem', fontWeight: '600', color: '#7C3AED', textTransform: 'uppercase', letterSpacing: '0.05em', borderRight: '1px solid #D1D5DB' }}>
-                      Last 5 Moods
-                    </th>
-                    <th style={{ padding: '8px 16px', textAlign: 'left', fontSize: '0.75rem', fontWeight: '600', color: '#7C3AED', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      Average Mood
-                    </th>
-                  </tr>
-                </thead>
-                <tbody style={{ backgroundColor: 'white', borderTop: '1px solid #D1D5DB' }}>
-                  {students.map((student) => (
-                    <tr
-                      key={student.id}
-                      style={{
-                        transition: 'background-color 0.3s',
-                        borderLeft: student.averageMood !== null && student.averageMood <= 2
-                          ? '4px solid #EF4444'
-                          : student.averageMood !== null && student.averageMood <= 3
-                          ? '4px solid #FACC15'
-                          : '4px solid #22C55E',
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F3F4F6'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
-                    >
-                      <td style={{ padding: '8px 16px', whiteSpace: 'nowrap', fontSize: '0.875rem', fontWeight: '500', color: '#1F2937', borderRight: '1px solid #E5E7EB' }}>
-                        {student.name}
-                      </td>
-                      <td style={{ padding: '8px 16px', whiteSpace: 'nowrap', fontSize: '0.875rem', color: '#4B5563', borderRight: '1px solid #E5E7EB' }}>
-                        {student.studentId || 'N/A'}
-                      </td>
-                      <td style={{ padding: '8px 16px', whiteSpace: 'nowrap', fontSize: '0.875rem', color: '#4B5563', borderRight: '1px solid #E5E7EB' }}>
-                        {student.grade || 'N/A'}
-                      </td>
-                      <td style={{ padding: '8px 16px', whiteSpace: 'nowrap', fontSize: '0.875rem', color: '#4B5563', borderRight: '1px solid #E5E7EB' }}>
-                        {student.birthday || 'N/A'}
-                      </td>
-                      <td style={{ padding: '8px 16px', fontSize: '0.875rem', color: '#4B5563', borderRight: '1px solid #E5E7EB' }}>
-                        <div style={{ display: 'flex', gap: '8px', fontSize: '1.5rem' }}>
-                          {student.moods.length > 0 ? (
-                            student.moods.map((mood, idx) => (
-                              <span
-                                key={idx}
-                                style={{ transition: 'transform 0.2s' }}
-                                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.25)'}
-                                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                                title={mood.date}
-                              >
-                                {mood.emoji}
-                              </span>
-                            ))
-                          ) : (
-                            <span style={{ fontSize: '0.875rem', color: '#6B7280' }}>
-                              No moods yet 😴
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td style={{ padding: '8px 16px', whiteSpace: 'nowrap', fontSize: '0.875rem', fontWeight: '500' }}>
-                        <span
-                          style={{
-                            color: student.averageMood !== null && student.averageMood <= 2
-                              ? '#DC2626'
-                              : student.averageMood !== null && student.averageMood <= 3
-                              ? '#D97706'
-                              : '#16A34A',
-                          }}
-                        >
-                          {student.averageMood !== null
-                            ? student.averageMood.toFixed(2)
-                            : 'N/A'}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-      </main>
-    </div>
-  );
-}
+            <div style={{ flex: 1, overflowY: 'auto', overflowX: 'auto' }}>...
+```}]}
