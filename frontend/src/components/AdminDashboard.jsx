@@ -127,7 +127,7 @@ export default function AdminDashboard({ user }) {
 
   return (
     <div
-      className="h-screen w-screen flex flex-col"
+      className="h-screen w-screen flex flex-col overflow-hidden"
       style={{
         backgroundImage: `
           linear-gradient(to bottom right, rgba(255, 182, 193, 0.3), rgba(173, 216, 230, 0.3)),
@@ -162,7 +162,7 @@ export default function AdminDashboard({ user }) {
 
       {/* Header */}
       <header className="bg-transparent">
-        <div className="px-4 py-4">
+        <div className="p-4">
           <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">
             Moodie Dashboard: {user.school}
           </h1>
@@ -185,7 +185,7 @@ export default function AdminDashboard({ user }) {
           </div>
         ) : (
           <div className="bg-white shadow-xl rounded-none h-full flex flex-col">
-            <div className="px-6 py-5 flex justify-between items-center">
+            <div className="p-4 flex justify-between items-center">
               <div>
                 <h2 className="text-2xl font-bold text-gray-800">
                   Student Mood Overview
@@ -203,8 +203,8 @@ export default function AdminDashboard({ user }) {
                 <span>Mood Selector</span>
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto">
-              <table className="min-w-full h-full divide-y divide-gray-300">
+            <div className="flex-1 overflow-y-auto overflow-x-auto">
+              <table className="min-w-full min-h-full divide-y divide-gray-300">
                 <thead className="bg-gradient-to-r from-purple-100 to-pink-100 sticky top-0 z-0">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-purple-700 uppercase tracking-wider border-r border-gray-300">
