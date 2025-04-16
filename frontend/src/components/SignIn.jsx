@@ -1,145 +1,328 @@
-import React from 'react';
-import { getAuth, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
-import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
-import { auth } from './firebase';
+import React, { useEffect, useState } from 'react';
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  query,
+  orderBy,
+  limit,
+  doc,
+  setDoc,
+} from 'firebase/firestore';
+import { getAuth, signOut } from 'firebase/auth';
+import { LogOut, Upload, Smile } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import clsx from 'clsx';
+import Papa from 'papaparse';
 
-export default function SignIn({ currentSchool }) {
+const moodScoreMap = {
+  '😠': 1,
+  '😟': 2,
+  '🙂': 3,
+  '😄': 4,
+  '😁': 5,
+};
+
+export default function AdminDashboard({ user }) {
+  const [students, setStudents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const db = getFirestore();
   const navigate = useNavigate();
 
-  const handleGoogleSignIn = async () => {
-    const provider = new GoogleAuthProvider();
-    const db = getFirestore();
+  const fetchStudentsWithMoods = async () => {
     try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      console.log('Signed in user:', user.uid, 'School:', currentSchool);
+      const studentRef = collection(db, 'schools', user.school, 'students');
+      const studentSnap = await getDocs(studentRef);
 
-      // Check if user is already assigned to this school
-      const userDocRef = doc(db, 'schools', currentSchool, 'users', user.uid);
-      const userDoc = await getDoc(userDocRef);
+      const studentData = await Promise.all(
+        studentSnap.docs.map(async (docSnap) => {
+          const student = docSnap.data();
+          const moodsRef = collection(
+            db,
+            'schools',
+            user.school,
+            'students',
+            docSnap.id,
+            'moods'
+          );
+          const moodsQuery = query(moodsRef, orderBy('date', 'desc'), limit(5));
+          const moodSnap = await getDocs(moodsQuery);
 
-      if (!userDoc.exists()) {
-        // Check if school has a counselor using school document
-        const schoolDocRef = doc(db, 'schools', currentSchool);
-        const schoolDoc = await getDoc(schoolDocRef);
-        const hasCounselor = schoolDoc.exists() && schoolDoc.data().hasCounselor === true;
-        const role = hasCounselor ? 'student' : 'counselor';
+          const moodEntries = moodSnap.docs.map((d) => d.data());
 
-        // Generate a studentId for students
-        const studentId = role === 'student' ? `S${user.uid.slice(0, 3).toUpperCase()}` : null;
+          const averageMood =
+            moodEntries.length > 0
+              ? moodEntries.reduce((acc, m) => acc + (m.score || 3), 0) /
+                moodEntries.length
+              : null;
 
-        // Assign user to school
-        await setDoc(userDocRef, {
-          role,
-          name: user.displayName || 'User',
-          ...(studentId && { studentId }),
-        });
+          return {
+            id: docSnap.id,
+            ...student,
+            moods: moodEntries,
+            averageMood,
+          };
+        })
+      );
 
-        // If counselor, update school document
-        if (role === 'counselor') {
-          await setDoc(schoolDocRef, { hasCounselor: true }, { merge: true });
+      const sorted = studentData.sort(
+        (a, b) =>
+          (a.averageMood === null ? 99 : a.averageMood) -
+          (b.averageMood === null ? 99 : b.averageMood)
+      );
+      setStudents(sorted);
+    } catch (error) {
+      console.error('Error fetching students:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user && user.school) {
+      fetchStudentsWithMoods();
+    }
+  }, [user]);
+
+  const handleSignOut = async () => {
+    await signOut(getAuth());
+    window.location.reload();
+  };
+
+  const handleCsvUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    Papa.parse(file, {
+      header: true,
+      complete: async (results) => {
+        const rows = results?.data;
+        if (!Array.isArray(rows)) {
+          console.error("Invalid CSV format: missing or malformed data");
+          return;
         }
 
-        console.log(`Assigned ${role} to ${user.uid} in ${currentSchool} with studentId: ${studentId || 'N/A'}`);
-      } else {
-        console.log('User already assigned in', currentSchool, ':', userDoc.data());
-      }
+        for (const row of rows) {
+          if (!row.studentId || !row.name) continue;
+          const studentRef = doc(db, 'schools', user.school, 'students', row.studentId);
+          await setDoc(studentRef, {
+            name: row.name,
+            studentId: row.studentId,
+            grade: row.grade,
+            birthday: row.birthday,
+          });
+        }
 
-      navigate('/');
-    } catch (err) {
-      console.error('Google Sign-In Error:', err);
-      alert('Failed to sign in. Please try again.');
-    }
+        fetchStudentsWithMoods();
+      },
+      error: (err) => {
+        console.error("CSV parse error:", err);
+      },
+    });
+  };
+
+  const handleMoodSelectorRedirect = () => {
+    navigate('/');
   };
 
   return (
     <div
       style={{
-        width: '100vw',
-        minHeight: '100vh',
+        width: '100dvw',
+        height: '100dvh',
         display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        background: 'linear-gradient(to bottom right, #ffdee9, #b5fffc)',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        margin: 0,
+        padding: 0,
+        backgroundImage: `
+          linear-gradient(to bottom right, rgba(255, 182, 193, 0.3), rgba(173, 216, 230, 0.3)),
+          radial-gradient(circle at 20% 30%, rgba(255, 182, 193, 0.5), transparent 50%),
+          radial-gradient(circle at 80% 70%, rgba(173, 216, 230, 0.5), transparent 50%),
+          radial-gradient(circle at 50% 50%, rgba(255, 228, 181, 0.4), transparent 50%)
+        `,
+        backgroundBlendMode: 'overlay',
       }}
     >
-      <div
-        style={{
-          width: '350px',
-          backgroundColor: '#fff',
-          borderRadius: '16px',
-          boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
-          padding: '2rem',
-          textAlign: 'center',
-        }}
-      >
-        <h1
-          style={{
-            fontSize: '2.5rem',
-            fontWeight: 'bold',
-            marginBottom: '1.5rem',
-            fontFamily: '"Fredoka One", "Comic Sans MS", cursive, sans-serif',
-            color: '#FF6B6B',
-            textShadow: '2px 2px 4px rgba(0, 0, 0, 0.1)',
-          }}
+      {/* Top Right Buttons */}
+      <div style={{ position: 'fixed', top: '8px', right: '8px', display: 'flex', gap: '12px', zIndex: 10 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', backgroundColor: 'white', border: '1px solid #A78BFA', borderRadius: '9999px', color: '#7C3AED', fontWeight: '500', cursor: 'pointer', transition: 'background-color 0.3s' }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#EDE9FE'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
         >
-          Moodie <span style={{ fontSize: '1.5rem' }}>🌈</span>
-        </h1>
-        <p style={{ marginBottom: '1rem', color: '#555' }}>
-          Signing in for {currentSchool}
-        </p>
+          <Upload style={{ width: '20px', height: '20px' }} />
+          <span>Upload CSV</span>
+          <input
+            type="file"
+            accept=".csv"
+            style={{ display: 'none' }}
+            onChange={handleCsvUpload}
+          />
+        </label>
         <button
-          onClick={handleGoogleSignIn}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-            width: '100%',
-            padding: '0.75rem',
-            backgroundColor: '#fff',
-            border: '1px solid #ccc',
-            borderRadius: '9999px',
-            cursor: 'pointer',
-            transition: 'box-shadow 0.2s',
-            fontSize: '1rem',
-          }}
+          onClick={handleSignOut}
+          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', backgroundColor: '#EC4899', color: 'white', border: 'none', borderRadius: '9999px', cursor: 'pointer', transition: 'background-color 0.3s, transform 0.2s' }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+            e.currentTarget.style.backgroundColor = '#DB2777';
+            e.currentTarget.style.transform = 'scale(1.05)';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.boxShadow = 'none';
+            e.currentTarget.style.backgroundColor = '#EC4899';
+            e.currentTarget.style.transform = 'scale(1)';
           }}
+          title="Sign Out"
         >
-          <svg
-            style={{ width: '24px', height: '24px' }}
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 48 48"
-          >
-            <path
-              fill="#EA4335"
-              d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
-            />
-            <path
-              fill="#4285F4"
-              d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
-            />
-            <path
-              fill="#FBBC05"
-              d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
-            />
-            <path
-              fill="#34A853"
-              d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
-            />
-            <path fill="none" d="M0 0h48v48H0z" />
-          </svg>
-          <span style={{ color: '#555', fontWeight: '500' }}>
-            Sign in with Google
-          </span>
+          <LogOut style={{ width: '20px', height: '20px' }} />
+          <span>Sign Out</span>
         </button>
       </div>
+
+      {/* Header */}
+      <header style={{ backgroundColor: 'transparent' }}>
+        <div style={{ padding: '8px' }}>
+          <h1 style={{ fontSize: '1.875rem', fontWeight: '800', backgroundImage: 'linear-gradient(to right, #7C3AED, #EC4899)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>
+            Moodie Dashboard: {user.school}
+          </h1>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main style={{ flex: 1, overflow: 'hidden' }}>
+        {loading ? (
+          <div style={{ height: '100%', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <p style={{ fontSize: '1.25rem', color: '#7C3AED', animation: 'pulse 1.5s infinite' }}>
+              Loading student moods... 🌈
+            </p>
+          </div>
+        ) : students.length === 0 ? (
+          <div style={{ height: '100%', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <p style={{ fontSize: '1.25rem', color: '#4B5563' }}>
+              No students found. Let’s add some smiles! 😊
+            </p>
+          </div>
+        ) : (
+          <div style={{ backgroundColor: 'white', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)', borderRadius: '0', height: '100%', width: '100%', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: '700', color: '#1F2937' }}>
+                  Student Mood Overview
+                </h2>
+                <p style={{ marginTop: '4px', fontSize: '0.875rem', color: '#4B5563' }}>
+                  Sorted to highlight students needing support first 🌟
+                </p>
+              </div>
+              <button
+                onClick={handleMoodSelectorRedirect}
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', backgroundColor: '#8B5CF6', color: 'white', border: 'none', borderRadius: '9999px', cursor: 'pointer', transition: 'background-color 0.3s, transform 0.2s' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#7C3AED';
+                  e.currentTarget.style.transform = 'scale(1.05)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#8B5CF6';
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
+                title="Go to Mood Selector"
+              >
+                <Smile style={{ width: '20px', height: '20px' }} />
+                <span>Mood Selector</span>
+              </button>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', overflowX: 'auto' }}>
+              <table style={{ width: '100%', height: '100%', borderCollapse: 'collapse' }}>
+                <thead style={{ backgroundImage: 'linear-gradient(to right, #EDE9FE, #FCE7F3)', position: 'sticky', top: 0, zIndex: 0 }}>
+                  <tr>
+                    <th style={{ padding: '8px 16px', textAlign: 'left', fontSize: '0.75rem', fontWeight: '600', color: '#7C3AED', textTransform: 'uppercase', letterSpacing: '0.05em', borderRight: '1px solid #D1D5DB' }}>
+                      Name
+                    </th>
+                    <th style={{ padding: '8px 16px', textAlign: 'left', fontSize: '0.75rem', fontWeight: '600', color: '#7C3AED', textTransform: 'uppercase', letterSpacing: '0.05em', borderRight: '1px solid #D1D5DB' }}>
+                      Student ID
+                    </th>
+                    <th style={{ padding: '8px 16px', textAlign: 'left', fontSize: '0.75rem', fontWeight: '600', color: '#7C3AED', textTransform: 'uppercase', letterSpacing: '0.05em', borderRight: '1px solid #D1D5DB' }}>
+                      Grade
+                    </th>
+                    <th style={{ padding: '8px 16px', textAlign: 'left', fontSize: '0.75rem', fontWeight: '600', color: '#7C3AED', textTransform: 'uppercase', letterSpacing: '0.05em', borderRight: '1px solid #D1D5DB' }}>
+                      Birthday
+                    </th>
+                    <th style={{ padding: '8px 16px', textAlign: 'left', fontSize: '0.75rem', fontWeight: '600', color: '#7C3AED', textTransform: 'uppercase', letterSpacing: '0.05em', borderRight: '1px solid #D1D5DB' }}>
+                      Last 5 Moods
+                    </th>
+                    <th style={{ padding: '8px 16px', textAlign: 'left', fontSize: '0.75rem', fontWeight: '600', color: '#7C3AED', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Average Mood
+                    </th>
+                  </tr>
+                </thead>
+                <tbody style={{ backgroundColor: 'white', borderTop: '1px solid #D1D5DB' }}>
+                  {students.map((student) => (
+                    <tr
+                      key={student.id}
+                      style={{
+                        transition: 'background-color 0.3s',
+                        borderLeft: student.averageMood !== null && student.averageMood <= 2
+                          ? '4px solid #EF4444'
+                          : student.averageMood !== null && student.averageMood <= 3
+                          ? '4px solid #FACC15'
+                          : '4px solid #22C55E',
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F3F4F6'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                    >
+                      <td style={{ padding: '8px 16px', whiteSpace: 'nowrap', fontSize: '0.875rem', fontWeight: '500', color: '#1F2937', borderRight: '1px solid #E5E7EB' }}>
+                        {student.name}
+                      </td>
+                      <td style={{ padding: '8px 16px', whiteSpace: 'nowrap', fontSize: '0.875rem', color: '#4B5563', borderRight: '1px solid #E5E7EB' }}>
+                        {student.studentId || 'N/A'}
+                      </td>
+                      <td style={{ padding: '8px 16px', whiteSpace: 'nowrap', fontSize: '0.875rem', color: '#4B5563', borderRight: '1px solid #E5E7EB' }}>
+                        {student.grade || 'N/A'}
+                      </td>
+                      <td style={{ padding: '8px 16px', whiteSpace: 'nowrap', fontSize: '0.875rem', color: '#4B5563', borderRight: '1px solid #E5E7EB' }}>
+                        {student.birthday || 'N/A'}
+                      </td>
+                      <td style={{ padding: '8px 16px', fontSize: '0.875rem', color: '#4B5563', borderRight: '1px solid #E5E7EB' }}>
+                        <div style={{ display: 'flex', gap: '8px', fontSize: '1.5rem' }}>
+                          {student.moods.length > 0 ? (
+                            student.moods.map((mood, idx) => (
+                              <span
+                                key={idx}
+                                style={{ transition: 'transform 0.2s' }}
+                                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.25)'}
+                                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                                title={mood.date}
+                              >
+                                {mood.emoji}
+                              </span>
+                            ))
+                          ) : (
+                            <span style={{ fontSize: '0.875rem', color: '#6B7280' }}>
+                              No moods yet 😴
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td style={{ padding: '8px 16px', whiteSpace: 'nowrap', fontSize: '0.875rem', fontWeight: '500' }}>
+                        <span
+                          style={{
+                            color: student.averageMood !== null && student.averageMood <= 2
+                              ? '#DC2626'
+                              : student.averageMood !== null && student.averageMood <= 3
+                              ? '#D97706'
+                              : '#16A34A',
+                          }}
+                        >
+                          {student.averageMood !== null
+                            ? student.averageMood.toFixed(2)
+                            : 'N/A'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </main>
     </div>
   );
 }
