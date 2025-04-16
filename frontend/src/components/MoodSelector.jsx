@@ -4,18 +4,18 @@ import { getAuth, signOut } from 'firebase/auth';
 
 const moods = [
   { emoji: '😄', label: 'Happy' },
-  { emoji: '🙂', label: 'Okay' },
+  { emoji: '😄', label: 'Okay' },
   { emoji: '😟', label: 'Sad' },
+  { emoji: '😟', label: 'Upset' },
   { emoji: '😠', label: 'Angry' },
-  { emoji: '😴', label: 'Tired' },
 ];
 
 const moodMessages = {
   Happy: 'Yay! You look happy!',
   Okay: 'Thanks! Hope your day gets better.',
   Sad: "Sorry you're sad. Cheer up soon!",
-  Angry: 'Take a deep breath. It will be okay!',
-  Tired: 'Rest up and feel better!',
+  Upset: 'Take a deep breath. It will be okay!',
+  Angry: 'Big feelings = brave heart. You’ve got this!',
 };
 
 export default function MoodFlow({ user }) {
