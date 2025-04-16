@@ -21,6 +21,7 @@ const moodScoreMap = {
 
 export default function AdminDashboard({ user }) {
   const [students, setStudents] = useState([]);
+  const [loading, setLoading] = useState(true);
   const db = getFirestore();
 
   const fetchStudentsWithMoods = async () => {
@@ -59,12 +60,17 @@ export default function AdminDashboard({ user }) {
         })
       );
 
+      // Sort by averageMood ascending (nulls last), prioritizing vulnerable students
       const sorted = studentData.sort(
-        (a, b) => (a.averageMood ?? 99) - (b.averageMood ?? 99)
+        (a, b) =>
+          (a.averageMood === null ? 99 : a.averageMood) -
+          (b.averageMood === null ? 99 : b.averageMood)
       );
       setStudents(sorted);
     } catch (error) {
       console.error('Error fetching students:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -80,55 +86,135 @@ export default function AdminDashboard({ user }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-100 to-blue-100 p-6">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">
-          Counselor Dashboard for{' '}
-          <span className="text-indigo-600">{user.school}</span>
-        </h1>
-        <button
-          onClick={handleSignOut}
-          className="bg-white p-2 rounded-lg shadow hover:bg-red-100 transition"
-        >
-          <LogOut className="w-5 h-5 text-gray-600" />
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {students.map((s) => (
-          <div
-            key={s.id}
-            className={clsx(
-              'p-4 rounded-xl shadow bg-white border-l-8',
-              s.averageMood <= 2
-                ? 'border-red-400'
-                : s.averageMood <= 3
-                ? 'border-yellow-400'
-                : 'border-green-400'
-            )}
+    <div className="min-h-screen bg-gray-100">
+      {/* Header */}
+      <header className="bg-white shadow">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-gray-900">
+            Counselor Dashboard for{' '}
+            <span className="text-indigo-600">{user.school}</span>
+          </h1>
+          <button
+            onClick={handleSignOut}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition"
+            title="Sign Out"
           >
-            <h2 className="text-xl font-semibold text-indigo-800 mb-1">{s.name}</h2>
-            <p className="text-sm text-gray-600">ID: {s.studentId}</p>
-            <p className="text-sm text-gray-600">Grade: {s.grade || 'N/A'}</p>
-            <p className="text-sm text-gray-600">Birthday: {s.birthday || 'N/A'}</p>
+            <LogOut className="w-5 h-5" />
+            <span>Sign Out</span>
+          </button>
+        </div>
+      </header>
 
-            <div className="mt-3">
-              <p className="text-sm font-medium text-gray-700 mb-1">Last 5 Moods:</p>
-              <div className="flex gap-2 text-2xl">
-                {s.moods.map((mood, idx) => (
-                  <span key={idx}>{mood.emoji}</span>
-                ))}
-              </div>
-            </div>
-
-            {s.averageMood !== null && (
-              <p className="mt-2 text-sm text-gray-500">
-                Avg mood: {s.averageMood.toFixed(2)}
-              </p>
-            )}
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {loading ? (
+          <div className="text-center py-10">
+            <p className="text-lg text-gray-600">Loading students...</p>
           </div>
-        ))}
-      </div>
+        ) : students.length === 0 ? (
+          <div className="text-center py-10">
+            <p className="text-lg text-gray-600">No students found.</p>
+          </div>
+        ) : (
+          <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+            <div className="px-4 py-5 sm:px-6">
+              <h2 className="text-lg font-medium text-gray-900">Student Mood Overview</h2>
+              <p className="mt-1 text-sm text-gray-600">
+                Students are sorted by average mood (lowest first) to highlight those who may need support.
+              </p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Name
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Student ID
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Grade
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Birthday
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Last 5 Moods
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Average Mood
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {students.map((student) => (
+                    <tr
+                      key={student.id}
+                      className={clsx(
+                        student.averageMood !== null && student.averageMood <= 2
+                          ? 'border-l-4 border-red-500'
+                          : student.averageMood !== null && student.averageMood <= 3
+                          ? 'border-l-4 border-yellow-500'
+                          : 'border-l-4 border-green-500'
+                      )}
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {student.name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {student.studentId || 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {student.grade || 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {student.birthday || 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div className="flex gap-2 text-2xl">
+                          {student.moods.length > 0 ? (
+                            student.moods.map((mood, idx) => (
+                              <span key={idx} title={mood.date}>
+                                {mood.emoji}
+                              </span>
+                            ))
+                          ) : (
+                            'No moods recorded'
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {student.averageMood !== null
+                          ? student.averageMood.toFixed(2)
+                          : 'N/A'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </main>
     </div>
   );
 }
