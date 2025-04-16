@@ -60,7 +60,7 @@ export default function AdminDashboard({ user }) {
         })
       );
 
-      // Sort by averageMood ascending (nulls last), prioritizing vulnerable students
+      // Sort by averageMood ascending (nulls last) for vulnerability
       const sorted = studentData.sort(
         (a, b) =>
           (a.averageMood === null ? 99 : a.averageMood) -
@@ -86,17 +86,16 @@ export default function AdminDashboard({ user }) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-pink-200 via-purple-100 to-blue-200">
       {/* Header */}
-      <header className="bg-white shadow">
+      <header className="bg-white shadow-lg rounded-b-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">
-            Counselor Dashboard for{' '}
-            <span className="text-indigo-600">{user.school}</span>
+          <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">
+            Moodie Dashboard: {user.school}
           </h1>
           <button
             onClick={handleSignOut}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition"
+            className="flex items-center gap-2 px-4 py-2 bg-pink-500 text-white rounded-full hover:bg-pink-600 transition transform hover:scale-105"
             title="Sign Out"
           >
             <LogOut className="w-5 h-5" />
@@ -106,111 +105,91 @@ export default function AdminDashboard({ user }) {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {loading ? (
-          <div className="text-center py-10">
-            <p className="text-lg text-gray-600">Loading students...</p>
+          <div className="text-center py-12">
+            <p className="text-xl text-purple-700 animate-pulse">Loading student moods...</p>
           </div>
         ) : students.length === 0 ? (
-          <div className="text-center py-10">
-            <p className="text-lg text-gray-600">No students found.</p>
+          <div className="text-center py-12">
+            <p className="text-xl text-gray-600">No students found. Add some to get started! 😊</p>
           </div>
         ) : (
-          <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-            <div className="px-4 py-5 sm:px-6">
-              <h2 className="text-lg font-medium text-gray-900">Student Mood Overview</h2>
-              <p className="mt-1 text-sm text-gray-600">
-                Students are sorted by average mood (lowest first) to highlight those who may need support.
-              </p>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Name
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Student ID
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Grade
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Birthday
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Last 5 Moods
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Average Mood
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {students.map((student) => (
-                    <tr
-                      key={student.id}
-                      className={clsx(
-                        student.averageMood !== null && student.averageMood <= 2
-                          ? 'border-l-4 border-red-500'
-                          : student.averageMood !== null && student.averageMood <= 3
-                          ? 'border-l-4 border-yellow-500'
-                          : 'border-l-4 border-green-500'
-                      )}
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {student.name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {student.studentId || 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {student.grade || 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {student.birthday || 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <div className="flex gap-2 text-2xl">
-                          {student.moods.length > 0 ? (
-                            student.moods.map((mood, idx) => (
-                              <span key={idx} title={mood.date}>
-                                {mood.emoji}
-                              </span>
-                            ))
-                          ) : (
-                            'No moods recorded'
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-6">
+              Student Mood Cards
+              <span className="text-sm font-normal block text-gray-600">
+                Sorted to show students who need support first 🌟
+              </span>
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {students.map((student) => (
+                <div
+                  key={student.id}
+                  className={clsx(
+                    'bg-white rounded-2xl shadow-xl p-6 transition transform hover:scale-105 hover:shadow-2xl',
+                    student.averageMood !== null && student.averageMood <= 2
+                      ? 'border-4 border-red-400'
+                      : student.averageMood !== null && student.averageMood <= 3
+                      ? 'border-4 border-yellow-400'
+                      : 'border-4 border-green-400'
+                  )}
+                >
+                  <h3 className="text-xl font-semibold text-purple-700 mb-2">
+                    {student.name}
+                  </h3>
+                  <div className="space-y-2 text-gray-700">
+                    <p className="text-sm">
+                      <span className="font-medium">ID:</span>{' '}
+                      {student.studentId || 'N/A'}
+                    </p>
+                    <p className="text-sm">
+                      <span className="font-medium">Grade:</span>{' '}
+                      {student.grade || 'N/A'}
+                    </p>
+                    <p className="text-sm">
+                      <span className="font-medium">Birthday:</span>{' '}
+                      {student.birthday || 'N/A'}
+                    </p>
+                    <div>
+                      <p className="text-sm font-medium mb-1">Last 5 Moods:</p>
+                      <div className="flex gap-2 text-3xl">
+                        {student.moods.length > 0 ? (
+                          student.moods.map((mood, idx) => (
+                            <span
+                              key={idx}
+                              className="transition transform hover:scale-125"
+                              title={mood.date}
+                            >
+                              {mood.emoji}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-sm text-gray-500">
+                            No moods yet 😴
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-sm font-medium text-gray-800">
+                      Average Mood:{' '}
+                      <span
+                        className={clsx(
+                          student.averageMood !== null && student.averageMood <= 2
+                            ? 'text-red-600'
+                            : student.averageMood !== null && student.averageMood <= 3
+                            ? 'text-yellow-600'
+                            : 'text-green-600'
+                        )}
+                      >
                         {student.averageMood !== null
                           ? student.averageMood.toFixed(2)
                           : 'N/A'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
