@@ -1,6 +1,3 @@
-Here’s the full updated **`App.jsx`** with the root route redirecting to `/signin` unless the user is already authenticated and authorized:
-
-```jsx
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import MoodFlow from './components/MoodSelector';
