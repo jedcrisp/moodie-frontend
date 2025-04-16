@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import MoodFlow from './components/MoodSelector';
+import MoodFlow from './components/MoodFlow';
 import AdminDashboard from './components/AdminDashboard';
 import SignIn from './components/SignIn';
 import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
@@ -105,6 +105,10 @@ export default function App() {
     };
   }, [user]);
 
+  useEffect(() => {
+    console.log('App viewport dimensions:', window.innerWidth, window.innerHeight);
+  }, []);
+
   if (loading) {
     console.log('Loading auth state...');
     return <div>Loading...</div>;
@@ -115,12 +119,20 @@ export default function App() {
   console.log('Current school:', currentSchool);
 
   return (
-    <div className="h-dvh w-dvw overflow-hidden">
+    <div
+      style={{
+        width: '100dvw',
+        height: '100dvh',
+        margin: 0,
+        padding: 0,
+        overflow: 'hidden',
+      }}
+    >
       <Routes>
         <Route
           path="/"
           element={
-            <div className="h-screen w-screen flex flex-col items-center justify-center bg-gradient-to-br from-rose-200 to-blue-200">
+            <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(to bottom right, #ffdee9, #b5fffc)' }}>
               <MoodFlow user={user} />
             </div>
           }
