@@ -1,69 +1,154 @@
 import React, { useState } from 'react';
-import { getFirestore, collection, addDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { getAuth } from 'firebase/auth';
 
-export default function MoodSelector({ user, onSelect }) {
+const moods = [
+  { emoji: '😄', label: 'Happy' },
+  { emoji: '🙂', label: 'Okay' },
+  { emoji: '😟', label: 'Sad' },
+  { emoji: '😠', label: 'Angry' },
+  { emoji: '😴', label: 'Tired' },
+];
+
+const moodMessages = {
+  Happy: 'Yay! You look happy!',
+  Okay: 'Thanks! Hope your day gets better.',
+  Sad: "Sorry you're sad. Cheer up soon!",
+  Angry: 'Take a deep breath. It will be okay!',
+  Tired: 'Rest up and feel better!',
+};
+
+export default function MoodFlow({ user }) {
   const [selectedMood, setSelectedMood] = useState(null);
-  const db = getFirestore();
   const navigate = useNavigate();
+  const isCounselor = user?.role === 'counselor';
 
-  const moods = [
-    { emoji: '😠', label: 'Angry', score: 1 },
-    { emoji: '😟', label: 'Sad', score: 2 },
-    { emoji: '🙂', label: 'Okay', score: 3 },
-    { emoji: '😄', label: 'Happy', score: 4 },
-    { emoji: '😁', label: 'Excited', score: 5 },
-  ];
+  const goToAdminDashboard = () => navigate('/admin');
 
-  const handleMoodSelect = async (mood) => {
-    setSelectedMood(mood);
-    try {
-      await addDoc(collection(db, 'schools', user.school, 'students', user.uid, 'moods'), {
-        emoji: mood.emoji,
-        score: mood.score,
-        date: new Date().toISOString().split('T')[0], // e.g., "2025-04-15"
-      });
-      if (onSelect) onSelect(mood);
-    } catch (error) {
-      console.error('Error submitting mood:', error);
-    }
-  };
+  if (selectedMood) {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100vh',
+          width: '100vw',
+          textAlign: 'center',
+          background: 'linear-gradient(to bottom right, #FECACA, #BFDBFE)',
+          padding: '1rem',
+        }}
+      >
+        <h1
+          style={{
+            fontSize: '2.5rem',
+            fontWeight: 'bold',
+            color: 'indigo',
+            marginBottom: '1.5rem',
+          }}
+        >
+          {moodMessages[selectedMood.label]}
+        </h1>
+        <div style={{ fontSize: '12rem', lineHeight: '1' }}>{selectedMood.emoji}</div>
+        <p style={{ fontSize: '2rem', fontWeight: '600', color: 'blue', marginTop: '1rem' }}>
+          {selectedMood.label}
+        </p>
+
+        {isCounselor && (
+          <button
+            onClick={goToAdminDashboard}
+            style={{
+              marginTop: '2rem',
+              backgroundColor: '#8b5cf6',
+              color: '#fff',
+              padding: '0.75rem 1.5rem',
+              borderRadius: '9999px',
+              fontWeight: '600',
+              fontSize: '1rem',
+              cursor: 'pointer',
+              transition: 'transform 0.2s',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+          >
+            Back to Admin Dashboard
+          </button>
+        )}
+      </div>
+    );
+  }
 
   return (
-    <div className="text-center">
-      {user.role === 'counselor' && (
-        <div className="flex justify-start mb-4">
-          <button
-            onClick={() => navigate('/admin')}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-500 text-white rounded-full hover:bg-purple-600 transition transform hover:scale-105"
-            title="Back to Admin Dashboard"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span>Back to Admin Dashboard</span>
-          </button>
-        </div>
-      )}
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">
-        How are you feeling today, {user.name}?
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '1.5rem',
+        justifyContent: 'center',
+        height: '100vh',
+        width: '100vw',
+        background: 'linear-gradient(to bottom right, #FBCFE8, #C7D2FE)',
+      }}
+    >
+      <h2
+        style={{
+          fontSize: '2rem',
+          fontWeight: '600',
+          color: '#1F2937',
+          textAlign: 'center',
+        }}
+      >
+        Hi there! How are you feeling today?
       </h2>
-      <div className="flex justify-center gap-4">
+
+      <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center' }}>
         {moods.map((mood) => (
           <button
-            key={mood.emoji}
-            onClick={() => handleMoodSelect(mood)}
-            className={clsx(
-              'flex flex-col items-center p-4 rounded-xl transition transform hover:scale-105',
-              selectedMood?.emoji === mood.emoji
-                ? 'bg-purple-100 border-2 border-purple-500'
-                : 'bg-white border-2 border-gray-300 hover:bg-gray-100'
-            )}
+            key={mood.label}
+            onClick={() => setSelectedMood(mood)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              padding: 0,
+              transition: 'transform 0.2s',
+              cursor: 'pointer',
+              fontSize: '8rem',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'scale(1.25)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
+            aria-label={mood.label}
           >
-            <span className="text-4xl">{mood.emoji}</span>
-            <span className="mt-2 text-sm font-medium text-gray-700">{mood.label}</span>
+            {mood.emoji}
           </button>
         ))}
       </div>
+
+      {isCounselor && (
+        <button
+          onClick={goToAdminDashboard}
+          style={{
+            marginTop: '2rem',
+            backgroundColor: '#8b5cf6',
+            color: '#fff',
+            padding: '0.75rem 1.5rem',
+            borderRadius: '9999px',
+            fontWeight: '600',
+            fontSize: '1rem',
+            cursor: 'pointer',
+            transition: 'transform 0.2s',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
+          onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+        >
+          Back to Admin Dashboard
+        </button>
+      )}
     </div>
   );
 }
