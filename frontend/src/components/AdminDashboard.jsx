@@ -160,6 +160,22 @@ export default function AdminDashboard({ user }) {
           />
         </label>
         <button
+          onClick={handleMoodSelectorRedirect}
+          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', backgroundColor: '#8B5CF6', color: 'white', border: 'none', borderRadius: '9999px', cursor: 'pointer', transition: 'background-color 0.3s, transform 0.2s' }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = '#7C3AED';
+            e.currentTarget.style.transform = 'scale(1.05)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = '#8B5CF6';
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+          title="Go to Mood Selector"
+        >
+          <Smile style={{ width: '20px', height: '20px' }} />
+          <span>Mood Selector</span>
+        </button>
+        <button
           onClick={handleSignOut}
           style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', backgroundColor: '#EC4899', color: 'white', border: 'none', borderRadius: '9999px', cursor: 'pointer', transition: 'background-color 0.3s, transform 0.2s' }}
           onMouseEnter={(e) => {
@@ -211,22 +227,6 @@ export default function AdminDashboard({ user }) {
                   Sorted to highlight students needing support first 🌟
                 </p>
               </div>
-              <button
-                onClick={handleMoodSelectorRedirect}
-                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', backgroundColor: '#8B5CF6', color: 'white', border: 'none', borderRadius: '9999px', cursor: 'pointer', transition: 'background-color 0.3s, transform 0.2s' }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#7C3AED';
-                  e.currentTarget.style.transform = 'scale(1.05)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#8B5CF6';
-                  e.currentTarget.style.transform = 'scale(1)';
-                }}
-                title="Go to Mood Selector"
-              >
-                <Smile style={{ width: '20px', height: '20px' }} />
-                <span>Mood Selector</span>
-              </button>
             </div>
             <div style={{ flex: 1, overflowY: 'auto', overflowX: 'auto' }}>
               <table style={{ width: '100%', height: '100%', borderCollapse: 'collapse' }}>
