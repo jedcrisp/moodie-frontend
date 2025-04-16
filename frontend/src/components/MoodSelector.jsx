@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAuth, signOut } from 'firebase/auth';
+import { ArrowLeft } from 'lucide-react'; // Added for the back button icon
 
 const moods = [
   { emoji: "😄", label: "Happy" },
@@ -19,7 +20,7 @@ const moodMessages = {
   Tired: "Rest up and feel better!",
 };
 
-export default function MoodFlow() {
+export default function MoodFlow({ user }) { // Added user prop
   const [selectedMood, setSelectedMood] = useState(null);
   const navigate = useNavigate();
 
@@ -102,6 +103,45 @@ export default function MoodFlow() {
         background: "linear-gradient(to bottom right, #FBCFE8, #C7D2FE)",
       }}
     >
+      {user && user.role === 'counselor' && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '1rem',
+            left: '1rem',
+          }}
+        >
+          <button
+            onClick={() => navigate('/admin')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.5rem 1rem',
+              backgroundColor: '#8B5CF6', // Purple background
+              color: 'white',
+              border: 'none',
+              borderRadius: '9999px',
+              cursor: 'pointer',
+              transition: 'transform 0.2s, background-color 0.3s',
+              fontSize: '1rem',
+              fontWeight: '500',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'scale(1.05)';
+              e.currentTarget.style.backgroundColor = '#7C3AED';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.backgroundColor = '#8B5CF6';
+            }}
+            title="Back to Admin Dashboard"
+          >
+            <ArrowLeft style={{ width: '1.25rem', height: '1.25rem' }} />
+            <span>Back to Admin Dashboard</span>
+          </button>
+        </div>
+      )}
       <h2
         style={{
           fontSize: "2rem",
