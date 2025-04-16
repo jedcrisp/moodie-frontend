@@ -13,37 +13,60 @@ export default function SignIn({ currentSchool }) {
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
-      console.log('Signed in user:', user.uid, 'School:', currentSchool);
+      console.log('Signed in user:', user.uid, 'School:', currentSchool, 'Email:', user.email);
 
-      // Check if user is already assigned to this school
+      // Check if user is already assigned as a counselor or student
       const userDocRef = doc(db, 'schools', currentSchool, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
 
       if (!userDoc.exists()) {
-        // Check if school has a counselor using school document
-        const schoolDocRef = doc(db, 'schools', currentSchool);
-        const schoolDoc = await getDoc(schoolDocRef);
-        const hasCounselor = schoolDoc.exists() && schoolDoc.data().hasCounselor === true;
-        const role = hasCounselor ? 'student' : 'counselor';
+        // Check student document
+        const studentDocRef = doc(db, 'schools', currentSchool, 'students', user.uid);
+        const studentDoc = await getDoc(studentDocRef);
 
-        // Generate a studentId for students
-        const studentId = role === 'student' ? `S${user.uid.slice(0, 3).toUpperCase()}` : null;
+        if (!studentDoc.exists()) {
+          // Check if the user's email is in the school's counselorEmails subcollection
+          const counselorEmailRef = doc(db, 'schools', currentSchool, 'counselorEmails', user.email);
+          const counselorEmailDoc = await getDoc(counselorEmailRef);
+          let role = 'student'; // Default role
 
-        // Assign user to school
-        await setDoc(userDocRef, {
-          role,
-          name: user.displayName || 'User',
-          ...(studentId && { studentId }),
-        });
+          if (counselorEmailDoc.exists() && counselorEmailDoc.data().role === 'counselor') {
+            role = 'counselor';
+          } else {
+            // Fallback to existing logic if email isn't in counselorEmails
+            const schoolDocRef = doc(db, 'schools', currentSchool);
+            const schoolDoc = await getDoc(schoolDocRef);
+            const hasCounselor = schoolDoc.exists() && schoolDoc.data().hasCounselor === true;
+            role = hasCounselor ? 'student' : 'counselor';
+          }
 
-        // If counselor, update school document
-        if (role === 'counselor') {
-          await setDoc(schoolDocRef, { hasCounselor: true }, { merge: true });
+          if (role === 'counselor') {
+            // Assign as counselor in users collection
+            await setDoc(userDocRef, {
+              role,
+              name: user.displayName || 'User',
+              studentId: null,
+            });
+            // Update school document
+            await setDoc(schoolDocRef, { hasCounselor: true }, { merge: true });
+            console.log(`Assigned counselor to ${user.uid} in ${currentSchool}`);
+          } else {
+            // Assign as student in students collection
+            const studentId = `S${user.uid.slice(0, 3).toUpperCase()}`;
+            await setDoc(studentDocRef, {
+              role,
+              name: user.displayName || 'User',
+              studentId,
+              grade: null,
+              birthday: null,
+            });
+            console.log(`Assigned student to ${user.uid} in ${currentSchool} with studentId: ${studentId}`);
+          }
+        } else {
+          console.log('User already assigned as student in', currentSchool, ':', studentDoc.data());
         }
-
-        console.log(`Assigned ${role} to ${user.uid} in ${currentSchool} with studentId: ${studentId || 'N/A'}`);
       } else {
-        console.log('User already assigned in', currentSchool, ':', userDoc.data());
+        console.log('User already assigned as counselor in', currentSchool, ':', userDoc.data());
       }
 
       navigate('/');
