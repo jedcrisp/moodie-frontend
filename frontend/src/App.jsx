@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import MoodSelector from './components/MoodSelector';
+import MoodFlow from './components/MoodFlow';
 import AdminDashboard from './components/AdminDashboard';
 import SignIn from './components/SignIn';
 import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
@@ -112,35 +112,37 @@ export default function App() {
   console.log('Current school:', currentSchool);
 
   return (
-    <Routes>
-      <Route
-        path="/"
-        element={
-          <div className="h-screen w-screen flex flex-col items-center justify-center bg-gradient-to-br from-rose-200 to-blue-200">
-            <MoodSelector user={user} onSelect={(mood) => console.log('Selected mood:', mood)} />
-          </div>
-        }
-      />
-      {user && user.role === 'student' && user.school === currentSchool && (
-        <>
-          <Route path="/signin" element={<Navigate to="/" replace />} />
-          <Route path="/admin" element={<Navigate to="/" replace />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </>
-      )}
-      {user && user.role === 'counselor' && user.school === currentSchool && (
-        <>
-          <Route path="/admin" element={<AdminDashboard user={user} />} />
-          <Route path="/signin" element={<Navigate to="/admin" replace />} />
-          <Route path="*" element={<Navigate to="/admin" replace />} />
-        </>
-      )}
-      {(!user || user.school !== currentSchool) && (
-        <>
-          <Route path="/signin" element={<SignIn currentSchool={currentSchool} />} />
-          <Route path="*" element={<Navigate to="/signin" replace />} />
-        </>
-      )}
-    </Routes>
+    <div className="h-dvh w-dvw overflow-hidden">
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <div className="h-screen w-screen flex flex-col items-center justify-center bg-gradient-to-br from-rose-200 to-blue-200">
+              <MoodFlow user={user} />
+            </div>
+          }
+        />
+        {user && user.role === 'student' && user.school === currentSchool && (
+          <>
+            <Route path="/signin" element={<Navigate to="/" replace />} />
+            <Route path="/admin" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </>
+        )}
+        {user && user.role === 'counselor' && user.school === currentSchool && (
+          <>
+            <Route path="/admin" element={<AdminDashboard user={user} />} />
+            <Route path="/signin" element={<Navigate to="/admin" replace />} />
+            <Route path="*" element={<Navigate to="/admin" replace />} />
+          </>
+        )}
+        {(!user || user.school !== currentSchool) && (
+          <>
+            <Route path="/signin" element={<SignIn currentSchool={currentSchool} />} />
+            <Route path="*" element={<Navigate to="/signin" replace />} />
+          </>
+        )}
+      </Routes>
+    </div>
   );
 }
