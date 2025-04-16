@@ -3,7 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import MoodSelector from './components/MoodSelector';
 import AdminDashboard from './components/AdminDashboard';
 import SignIn from './components/SignIn';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
 
 export default function App() {
@@ -78,6 +78,30 @@ export default function App() {
     };
   }, [currentSchool]);
 
+  // Auto sign-out for students only (not counselors)
+  useEffect(() => {
+    if (!user || user.role !== 'student') return;
+
+    console.log('Starting 5-second logout timer for student');
+    const logoutTimer = setTimeout(() => {
+      console.log('Logging out student');
+      const auth = getAuth();
+      signOut(auth)
+        .then(() => {
+          console.log('User signed out');
+          setUser(null);
+        })
+        .catch((error) => {
+          console.error('Logout error:', error);
+        });
+    }, 5000);
+
+    return () => {
+      console.log('Clearing logout timer');
+      clearTimeout(logoutTimer);
+    };
+  }, [user]);
+
   if (loading) {
     console.log('Loading auth state...');
     return <div>Loading...</div>;
@@ -89,7 +113,6 @@ export default function App() {
 
   return (
     <Routes>
-      {/* Allow both students and counselors to access MoodSelector at '/' */}
       <Route
         path="/"
         element={
