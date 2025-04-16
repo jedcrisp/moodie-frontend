@@ -12,7 +12,7 @@ import {
 import { getAuth, signOut } from 'firebase/auth';
 import { LogOut, Upload, Smile } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import clsx from 'clsx'; // Ensure clsx is imported
+import clsx from 'clsx';
 import Papa from 'papaparse';
 
 const moodScoreMap = {
@@ -127,7 +127,7 @@ export default function AdminDashboard({ user }) {
 
   return (
     <div
-      className="min-h-screen"
+      className="min-h-screen flex flex-col"
       style={{
         backgroundImage: `
           linear-gradient(to bottom right, rgba(255, 182, 193, 0.3), rgba(173, 216, 230, 0.3)),
@@ -138,6 +138,7 @@ export default function AdminDashboard({ user }) {
         backgroundBlendMode: 'overlay',
       }}
     >
+      {/* Top Right Buttons */}
       <div className="fixed top-4 right-4 flex items-center gap-3 z-10">
         <label className="flex items-center gap-2 px-4 py-2 bg-white border border-purple-500 rounded-full text-purple-600 font-medium cursor-pointer hover:bg-purple-50 transition">
           <Upload className="w-5 h-5" />
@@ -159,29 +160,31 @@ export default function AdminDashboard({ user }) {
         </button>
       </div>
 
+      {/* Header */}
       <header className="bg-transparent">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="px-4 py-4">
           <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">
             Moodie Dashboard: {user.school}
           </h1>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Main Content */}
+      <main className="flex-1 px-4 py-4 overflow-hidden">
         {loading ? (
-          <div className="text-center py-12">
+          <div className="h-full flex items-center justify-center">
             <p className="text-xl text-purple-700 animate-pulse">
               Loading student moods... 🌈
             </p>
           </div>
         ) : students.length === 0 ? (
-          <div className="text-center py-12">
+          <div className="h-full flex items-center justify-center">
             <p className="text-xl text-gray-600">
               No students found. Let’s add some smiles! 😊
             </p>
           </div>
         ) : (
-          <div className="bg-white shadow-xl rounded-2xl overflow-hidden">
+          <div className="bg-white shadow-xl rounded-2xl h-full flex flex-col">
             <div className="px-6 py-5 flex justify-between items-center">
               <div>
                 <h2 className="text-2xl font-bold text-gray-800">
@@ -200,9 +203,9 @@ export default function AdminDashboard({ user }) {
                 <span>Mood Selector</span>
               </button>
             </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-300">
-                <thead className="bg-gradient-to-r from-purple-100 to-pink-100">
+            <div className="flex-1 overflow-y-auto">
+              <table className="min-w-full h-full divide-y divide-gray-300">
+                <thead className="bg-gradient-to-r from-purple-100 to-pink-100 sticky top-0 z-0">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-purple-700 uppercase tracking-wider border-r border-gray-300">
                       Name
