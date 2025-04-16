@@ -14,6 +14,8 @@ import { LogOut, Upload, Smile } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 import Papa from 'papaparse';
+import { useContext } from 'react';
+import { SchoolContext } from '../context/SchoolContext';
 
 const moodScoreMap = {
   '😠': 1,
@@ -77,6 +79,14 @@ export default function AdminDashboard({ user }) {
       setLoading(false);
     }
   };
+
+  function SignIn(...) {
+  const { displayName } = useContext(SchoolContext);
+  return (
+    <h1>Signing in for {displayName}</h1>
+    // …
+  );
+}
 
   useEffect(() => {
     if (user && user.school) {
