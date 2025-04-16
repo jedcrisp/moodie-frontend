@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAuth } from 'firebase/auth';
+import { getAuth, signOut } from 'firebase/auth';
 
 const moods = [
   { emoji: '😄', label: 'Happy' },
@@ -20,8 +20,38 @@ const moodMessages = {
 
 export default function MoodFlow({ user }) {
   const [selectedMood, setSelectedMood] = useState(null);
+  const [secondsRemaining, setSecondsRemaining] = useState(5); // Countdown timer state
   const navigate = useNavigate();
   const isCounselor = user?.role === 'counselor';
+
+  // Auto sign-out for students after selecting a mood
+  useEffect(() => {
+    if (selectedMood && !isCounselor) {
+      // Start the countdown timer
+      const timer = setInterval(() => {
+        setSecondsRemaining((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            // Sign out and redirect
+            const auth = getAuth();
+            signOut(auth)
+              .then(() => {
+                console.log('User signed out after mood selection.');
+                navigate('/signin');
+              })
+              .catch((error) => {
+                console.error('Sign-out error:', error);
+              });
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      // Clean up the timer on component unmount
+      return () => clearInterval(timer);
+    }
+  }, [selectedMood, isCounselor, navigate]);
 
   const goToAdminDashboard = () => navigate('/admin');
 
@@ -54,7 +84,11 @@ export default function MoodFlow({ user }) {
         <p style={{ fontSize: '2rem', fontWeight: '600', color: 'blue', marginTop: '1rem' }}>
           {selectedMood.label}
         </p>
-
+        {!isCounselor && (
+          <p style={{ fontSize: '1.25rem', color: '#555', marginTop: '1rem' }}>
+            Signing out in {secondsRemaining} seconds...
+          </p>
+        )}
         {isCounselor && (
           <button
             onClick={goToAdminDashboard}
