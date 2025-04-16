@@ -127,7 +127,7 @@ export default function AdminDashboard({ user }) {
 
   return (
     <div
-      className="min-h-screen flex flex-col"
+      className="h-screen w-screen flex flex-col"
       style={{
         backgroundImage: `
           linear-gradient(to bottom right, rgba(255, 182, 193, 0.3), rgba(173, 216, 230, 0.3)),
@@ -139,7 +139,7 @@ export default function AdminDashboard({ user }) {
       }}
     >
       {/* Top Right Buttons */}
-      <div className="fixed top-4 right-4 flex items-center gap-3 z-10">
+      <div className="fixed top-2 right-2 flex items-center gap-3 z-10">
         <label className="flex items-center gap-2 px-4 py-2 bg-white border border-purple-500 rounded-full text-purple-600 font-medium cursor-pointer hover:bg-purple-50 transition">
           <Upload className="w-5 h-5" />
           <span>Upload CSV</span>
@@ -170,7 +170,7 @@ export default function AdminDashboard({ user }) {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 px-4 py-4 overflow-hidden">
+      <main className="flex-1 overflow-hidden">
         {loading ? (
           <div className="h-full flex items-center justify-center">
             <p className="text-xl text-purple-700 animate-pulse">
@@ -184,7 +184,7 @@ export default function AdminDashboard({ user }) {
             </p>
           </div>
         ) : (
-          <div className="bg-white shadow-xl rounded-2xl h-full flex flex-col">
+          <div className="bg-white shadow-xl rounded-none h-full flex flex-col">
             <div className="px-6 py-5 flex justify-between items-center">
               <div>
                 <h2 className="text-2xl font-bold text-gray-800">
