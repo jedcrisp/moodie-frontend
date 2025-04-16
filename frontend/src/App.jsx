@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'; // ✅ make sure useNavigate is imported
-import MoodSelector from './components/MoodSelector.jsx';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import MoodSelector from './components/MoodSelector';
 import AdminDashboard from './components/AdminDashboard';
 import SignIn from './components/SignIn';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
@@ -9,7 +9,6 @@ import { getFirestore, doc, getDoc } from 'firebase/firestore';
 export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate(); // ✅ properly declared here
 
   const getSchoolFromSubdomain = () => {
     const hostname = window.location.hostname;
@@ -22,7 +21,6 @@ export default function App() {
 
   const currentSchool = getSchoolFromSubdomain();
 
-  // ✅ Auth state + Firestore user fetch
   useEffect(() => {
     const auth = getAuth();
     const db = getFirestore();
@@ -45,8 +43,23 @@ export default function App() {
             setUser(userData);
             console.log('Set user:', userData);
           } else {
-            console.log('User not found in school:', currentSchool);
-            setUser(null);
+            const studentDocRef = doc(db, 'schools', currentSchool, 'students', currentUser.uid);
+            const studentDoc = await getDoc(studentDocRef);
+
+            if (studentDoc.exists()) {
+              const userData = {
+                role: 'student',
+                name: studentDoc.data().name || 'User',
+                uid: currentUser.uid,
+                school: currentSchool,
+                studentId: studentDoc.data().studentId || null,
+              };
+              setUser(userData);
+              console.log('Set user:', userData);
+            } else {
+              console.log('User not found in school:', currentSchool);
+              setUser(null);
+            }
           }
         } catch (error) {
           console.error('Error fetching user data:', error);
@@ -65,17 +78,6 @@ export default function App() {
     };
   }, [currentSchool]);
 
-  // ✅ Redirect after user is loaded
-  useEffect(() => {
-    if (!loading && user && user.school === currentSchool) {
-      if (user.role === 'counselor' && window.location.pathname !== '/admin') {
-        navigate('/admin');
-      } else if (user.role === 'student' && window.location.pathname !== '/') {
-        navigate('/');
-      }
-    }
-  }, [user, loading, currentSchool, navigate]);
-
   if (loading) {
     console.log('Loading auth state...');
     return <div>Loading...</div>;
@@ -87,17 +89,19 @@ export default function App() {
 
   return (
     <Routes>
+      {/* Allow both students and counselors to access MoodSelector at '/' */}
+      <Route
+        path="/"
+        element={
+          <div className="h-screen w-screen flex flex-col items-center justify-center bg-gradient-to-br from-rose-200 to-blue-200">
+            <MoodSelector user={user} onSelect={(mood) => console.log('Selected mood:', mood)} />
+          </div>
+        }
+      />
       {user && user.role === 'student' && user.school === currentSchool && (
         <>
-          <Route
-            path="/"
-            element={
-              <div className="h-screen w-screen flex flex-col items-center justify-center bg-gradient-to-br from-rose-200 to-blue-200">
-                <MoodSelector user={user} onSelect={(mood) => console.log('Selected mood:', mood)} />
-              </div>
-            }
-          />
           <Route path="/signin" element={<Navigate to="/" replace />} />
+          <Route path="/admin" element={<Navigate to="/" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </>
       )}
