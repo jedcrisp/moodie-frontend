@@ -6,7 +6,7 @@ const moods = [
   { emoji: '😄', label: 'Happy' },
   { emoji: '😄', label: 'Okay' },
   { emoji: '😟', label: 'Sad' },
-  { emoji: '😟', label: 'Upset' },
+  { emoji: '😔', label: 'Upset' },
   { emoji: '😠', label: 'Angry' },
 ];
 
