@@ -252,4 +252,4 @@ export default function AdminDashboard({ user }) {
               </div>
             </div>
             <div style={{ flex: 1, overflowY: 'auto', overflowX: 'auto' }}>...
-```}]}
+}]}
