@@ -60,6 +60,7 @@ export default function AdminDashboard({ user }) {
         })
       );
 
+      // Sort by averageMood ascending (nulls last) for vulnerability
       const sorted = studentData.sort(
         (a, b) =>
           (a.averageMood === null ? 99 : a.averageMood) -
@@ -86,6 +87,7 @@ export default function AdminDashboard({ user }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-200 to-blue-200">
+      {/* Header */}
       <header className="bg-white shadow-lg rounded-b-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">
@@ -102,6 +104,7 @@ export default function AdminDashboard({ user }) {
         </div>
       </header>
 
+      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {loading ? (
           <div className="text-center py-12">
@@ -116,48 +119,121 @@ export default function AdminDashboard({ user }) {
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {students.map((student) => (
-              <div
-                key={student.id}
-                className={clsx(
-                  'grid grid-cols-6 gap-4 items-center p-4 rounded-xl shadow-sm border bg-white',
-                  student.averageMood !== null && student.averageMood <= 2
-                    ? 'border-red-300'
-                    : student.averageMood !== null && student.averageMood <= 3
-                    ? 'border-yellow-300'
-                    : 'border-green-300'
-                )}
-              >
-                <div className="text-sm font-medium text-gray-900 col-span-1">{student.name}</div>
-                <div className="text-sm text-gray-600 col-span-1">{student.studentId || 'N/A'}</div>
-                <div className="text-sm text-gray-600 col-span-1">{student.grade || 'N/A'}</div>
-                <div className="text-sm text-gray-600 col-span-1">{student.birthday || 'N/A'}</div>
-                <div className="flex gap-2 text-2xl col-span-1">
-                  {student.moods.length > 0 ? (
-                    student.moods.map((mood, idx) => (
-                      <span key={idx} className="hover:scale-110 transition">{mood.emoji}</span>
-                    ))
-                  ) : (
-                    <span className="text-sm text-gray-400">No moods yet</span>
-                  )}
-                </div>
-                <div
-                  className={clsx(
-                    'text-sm font-semibold col-span-1',
-                    student.averageMood !== null && student.averageMood <= 2
-                      ? 'text-red-600'
-                      : student.averageMood !== null && student.averageMood <= 3
-                      ? 'text-yellow-600'
-                      : 'text-green-600'
-                  )}
-                >
-                  {student.averageMood !== null
-                    ? student.averageMood.toFixed(2)
-                    : 'N/A'}
-                </div>
-              </div>
-            ))}
+          <div className="bg-white shadow-xl rounded-2xl overflow-hidden">
+            <div className="px-6 py-5">
+              <h2 className="text-2xl font-bold text-gray-800">
+                Student Mood Overview
+              </h2>
+              <p className="mt-1 text-sm text-gray-600">
+                Sorted to highlight students needing support first 🌟
+              </p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-300">
+                <thead className="bg-gradient-to-r from-purple-100 to-pink-100">
+                  <tr>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-semibold text-purple-700 uppercase tracking-wider w-1/6"
+                    >
+                      Name
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-semibold text-purple-700 uppercase tracking-wider w-1/6"
+                    >
+                      Student ID
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-semibold text-purple-700 uppercase tracking-wider w-1/12"
+                    >
+                      Grade
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-semibold text-purple-700 uppercase tracking-wider w-1/6"
+                    >
+                      Birthday
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-semibold text-purple-700 uppercase tracking-wider w-1/4"
+                    >
+                      Last 5 Moods
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-semibold text-purple-700 uppercase tracking-wider w-1/6"
+                    >
+                      Average Mood
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {students.map((student) => (
+                    <tr
+                      key={student.id}
+                      className={clsx(
+                        'transition hover:bg-gray-50',
+                        student.averageMood !== null && student.averageMood <= 2
+                          ? 'border-l-4 border-red-500'
+                          : student.averageMood !== null && student.averageMood <= 3
+                          ? 'border-l-4 border-yellow-500'
+                          : 'border-l-4 border-green-500'
+                      )}
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {student.name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {student.studentId || 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {student.grade || 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {student.birthday || 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600">
+                        <div className="flex gap-3 text-2xl">
+                          {student.moods.length > 0 ? (
+                            student.moods.map((mood, idx) => (
+                              <span
+                                key={idx}
+                                className="transition transform hover:scale-125"
+                                title={mood.date}
+                              >
+                                {mood.emoji}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-sm text-gray-500">
+                              No moods yet 😴
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <span
+                          className={clsx(
+                            student.averageMood !== null && student.averageMood <= 2
+                              ? 'text-red-600'
+                              : student.averageMood !== null && student.averageMood <= 3
+                              ? 'text-yellow-600'
+                              : 'text-green-600'
+                          )}
+                        >
+                          {student.averageMood !== null
+                            ? student.averageMood.toFixed(2)
+                            : 'N/A'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </main>
