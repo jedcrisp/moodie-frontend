@@ -16,6 +16,9 @@ export default function App() {
     if (hostname === 'localhost' || hostname.includes('127.0.0.1')) {
       return 'TestSchool';
     }
+    if (parts[0] === 'www') {
+      return 'TestSchool'; // Default school for www.yourapp.com
+    }
     return parts[0];
   };
 
