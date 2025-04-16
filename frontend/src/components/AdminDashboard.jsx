@@ -127,8 +127,14 @@ export default function AdminDashboard({ user }) {
 
   return (
     <div
-      className="h-dvh w-dvw flex flex-col overflow-hidden"
       style={{
+        width: '100dvw',
+        height: '100dvh',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        margin: 0,
+        padding: 0,
         backgroundImage: `
           linear-gradient(to bottom right, rgba(255, 182, 193, 0.3), rgba(173, 216, 230, 0.3)),
           radial-gradient(circle at 20% 30%, rgba(255, 182, 193, 0.5), transparent 50%),
@@ -139,147 +145,170 @@ export default function AdminDashboard({ user }) {
       }}
     >
       {/* Top Right Buttons */}
-      <div className="fixed top-2 right-2 flex items-center gap-3 z-10">
-        <label className="flex items-center gap-2 px-4 py-2 bg-white border border-purple-500 rounded-full text-purple-600 font-medium cursor-pointer hover:bg-purple-50 transition">
-          <Upload className="w-5 h-5" />
+      <div style={{ position: 'fixed', top: '8px', right: '8px', display: 'flex', gap: '12px', zIndex: 10 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', backgroundColor: 'white', border: '1px solid #A78BFA', borderRadius: '9999px', color: '#7C3AED', fontWeight: '500', cursor: 'pointer', transition: 'background-color 0.3s' }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#EDE9FE'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+        >
+          <Upload style={{ width: '20px', height: '20px' }} />
           <span>Upload CSV</span>
           <input
             type="file"
             accept=".csv"
-            className="hidden"
+            style={{ display: 'none' }}
             onChange={handleCsvUpload}
           />
         </label>
         <button
           onClick={handleSignOut}
-          className="flex items-center gap-2 px-4 py-2 bg-pink-500 text-white rounded-full hover:bg-pink-600 transition transform hover:scale-105"
+          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', backgroundColor: '#EC4899', color: 'white', border: 'none', borderRadius: '9999px', cursor: 'pointer', transition: 'background-color 0.3s, transform 0.2s' }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = '#DB2777';
+            e.currentTarget.style.transform = 'scale(1.05)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = '#EC4899';
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
           title="Sign Out"
         >
-          <LogOut className="w-5 h-5" />
+          <LogOut style={{ width: '20px', height: '20px' }} />
           <span>Sign Out</span>
         </button>
       </div>
 
       {/* Header */}
-      <header className="bg-transparent">
-        <div className="p-2">
-          <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">
+      <header style={{ backgroundColor: 'transparent' }}>
+        <div style={{ padding: '8px' }}>
+          <h1 style={{ fontSize: '1.875rem', fontWeight: '800', backgroundImage: 'linear-gradient(to right, #7C3AED, #EC4899)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>
             Moodie Dashboard: {user.school}
           </h1>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-hidden">
+      <main style={{ flex: 1, overflow: 'hidden' }}>
         {loading ? (
-          <div className="h-full w-full flex items-center justify-center">
-            <p className="text-xl text-purple-700 animate-pulse">
+          <div style={{ height: '100%', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <p style={{ fontSize: '1.25rem', color: '#7C3AED', animation: 'pulse 1.5s infinite' }}>
               Loading student moods... 🌈
             </p>
           </div>
         ) : students.length === 0 ? (
-          <div className="h-full w-full flex items-center justify-center">
-            <p className="text-xl text-gray-600">
+          <div style={{ height: '100%', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <p style={{ fontSize: '1.25rem', color: '#4B5563' }}>
               No students found. Let’s add some smiles! 😊
             </p>
           </div>
         ) : (
-          <div className="bg-white shadow-xl rounded-none h-full w-full flex flex-col">
-            <div className="p-2 flex justify-between items-center">
+          <div style={{ backgroundColor: 'white', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)', borderRadius: '0', height: '100%', width: '100%', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <h2 className="text-2xl font-bold text-gray-800">
+                <h2 style={{ fontSize: '1.5rem', fontWeight: '700', color: '#1F2937' }}>
                   Student Mood Overview
                 </h2>
-                <p className="mt-1 text-sm text-gray-600">
+                <p style={{ marginTop: '4px', fontSize: '0.875rem', color: '#4B5563' }}>
                   Sorted to highlight students needing support first 🌟
                 </p>
               </div>
               <button
                 onClick={handleMoodSelectorRedirect}
-                className="flex items-center gap-2 px-4 py-2 bg-purple-500 text-white rounded-full hover:bg-purple-600 transition transform hover:scale-105"
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', backgroundColor: '#8B5CF6', color: 'white', border: 'none', borderRadius: '9999px', cursor: 'pointer', transition: 'background-color 0.3s, transform 0.2s' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#7C3AED';
+                  e.currentTarget.style.transform = 'scale(1.05)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#8B5CF6';
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
                 title="Go to Mood Selector"
               >
-                <Smile className="w-5 h-5" />
+                <Smile style={{ width: '20px', height: '20px' }} />
                 <span>Mood Selector</span>
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto overflow-x-auto">
-              <table className="w-full h-full divide-y divide-gray-300">
-                <thead className="bg-gradient-to-r from-purple-100 to-pink-100 sticky top-0 z-0">
+            <div style={{ flex: 1, overflowY: 'auto', overflowX: 'auto' }}>
+              <table style={{ width: '100%', height: '100%', borderCollapse: 'collapse' }}>
+                <thead style={{ backgroundImage: 'linear-gradient(to right, #EDE9FE, #FCE7F3)', position: 'sticky', top: 0, zIndex: 0 }}>
                   <tr>
-                    <th className="px-4 py-2 text-left text-xs font-semibold text-purple-700 uppercase tracking-wider border-r border-gray-300">
+                    <th style={{ padding: '8px 16px', textAlign: 'left', fontSize: '0.75rem', fontWeight: '600', color: '#7C3AED', textTransform: 'uppercase', letterSpacing: '0.05em', borderRight: '1px solid #D1D5DB' }}>
                       Name
                     </th>
-                    <th className="px-4 py-2 text-left text-xs font-semibold text-purple-700 uppercase tracking-wider border-r border-gray-300">
+                    <th style={{ padding: '8px 16px', textAlign: 'left', fontSize: '0.75rem', fontWeight: '600', color: '#7C3AED', textTransform: 'uppercase', letterSpacing: '0.05em', borderRight: '1px solid #D1D5DB' }}>
                       Student ID
                     </th>
-                    <th className="px-4 py-2 text-left text-xs font-semibold text-purple-700 uppercase tracking-wider border-r border-gray-300">
+                    <th style={{ padding: '8px 16px', textAlign: 'left', fontSize: '0.75rem', fontWeight: '600', color: '#7C3AED', textTransform: 'uppercase', letterSpacing: '0.05em', borderRight: '1px solid #D1D5DB' }}>
                       Grade
                     </th>
-                    <th className="px-4 py-2 text-left text-xs font-semibold text-purple-700 uppercase tracking-wider border-r border-gray-300">
+                    <th style={{ padding: '8px 16px', textAlign: 'left', fontSize: '0.75rem', fontWeight: '600', color: '#7C3AED', textTransform: 'uppercase', letterSpacing: '0.05em', borderRight: '1px solid #D1D5DB' }}>
                       Birthday
                     </th>
-                    <th className="px-4 py-2 text-left text-xs font-semibold text-purple-700 uppercase tracking-wider border-r border-gray-300">
+                    <th style={{ padding: '8px 16px', textAlign: 'left', fontSize: '0.75rem', fontWeight: '600', color: '#7C3AED', textTransform: 'uppercase', letterSpacing: '0.05em', borderRight: '1px solid #D1D5DB' }}>
                       Last 5 Moods
                     </th>
-                    <th className="px-4 py-2 text-left text-xs font-semibold text-purple-700 uppercase tracking-wider">
+                    <th style={{ padding: '8px 16px', textAlign: 'left', fontSize: '0.75rem', fontWeight: '600', color: '#7C3AED', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                       Average Mood
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody style={{ backgroundColor: 'white', borderTop: '1px solid #D1D5DB' }}>
                   {students.map((student) => (
                     <tr
                       key={student.id}
-                      className={clsx(
-                        'transition hover:bg-gray-50',
-                        student.averageMood !== null && student.averageMood <= 2
-                          ? 'border-l-4 border-red-500'
+                      style={{
+                        transition: 'background-color 0.3s',
+                        borderLeft: student.averageMood !== null && student.averageMood <= 2
+                          ? '4px solid #EF4444'
                           : student.averageMood !== null && student.averageMood <= 3
-                          ? 'border-l-4 border-yellow-500'
-                          : 'border-l-4 border-green-500'
-                      )}
+                          ? '4px solid #FACC15'
+                          : '4px solid #22C55E',
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F3F4F6'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
                     >
-                      <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900 border-r border-gray-200">
+                      <td style={{ padding: '8px 16px', whiteSpace: 'nowrap', fontSize: '0.875rem', fontWeight: '500', color: '#1F2937', borderRight: '1px solid #E5E7EB' }}>
                         {student.name}
                       </td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-600 border-r border-gray-200">
+                      <td style={{ padding: '8px 16px', whiteSpace: 'nowrap', fontSize: '0.875rem', color: '#4B5563', borderRight: '1px solid #E5E7EB' }}>
                         {student.studentId || 'N/A'}
                       </td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-600 border-r border-gray-200">
+                      <td style={{ padding: '8px 16px', whiteSpace: 'nowrap', fontSize: '0.875rem', color: '#4B5563', borderRight: '1px solid #E5E7EB' }}>
                         {student.grade || 'N/A'}
                       </td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-600 border-r border-gray-200">
+                      <td style={{ padding: '8px 16px', whiteSpace: 'nowrap', fontSize: '0.875rem', color: '#4B5563', borderRight: '1px solid #E5E7EB' }}>
                         {student.birthday || 'N/A'}
                       </td>
-                      <td className="px-4 py-2 text-sm text-gray-600 border-r border-gray-200">
-                        <div className="flex gap-2 text-2xl">
+                      <td style={{ padding: '8px 16px', fontSize: '0.875rem', color: '#4B5563', borderRight: '1px solid #E5E7EB' }}>
+                        <div style={{ display: 'flex', gap: '8px', fontSize: '1.5rem' }}>
                           {student.moods.length > 0 ? (
                             student.moods.map((mood, idx) => (
                               <span
                                 key={idx}
-                                className="transition transform hover:scale-125"
+                                style={{ transition: 'transform 0.2s' }}
+                                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.25)'}
+                                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                                 title={mood.date}
                               >
                                 {mood.emoji}
                               </span>
                             ))
                           ) : (
-                            <span className="text-sm text-gray-500">
+                            <span style={{ fontSize: '0.875rem', color: '#6B7280' }}>
                               No moods yet 😴
                             </span>
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm font-medium">
+                      <td style={{ padding: '8px 16px', whiteSpace: 'nowrap', fontSize: '0.875rem', fontWeight: '500' }}>
                         <span
-                          className={clsx(
-                            student.averageMood !== null && student.averageMood <= 2
-                              ? 'text-red-600'
+                          style={{
+                            color: student.averageMood !== null && student.averageMood <= 2
+                              ? '#DC2626'
                               : student.averageMood !== null && student.averageMood <= 3
-                              ? 'text-yellow-600'
-                              : 'text-green-600'
-                          )}
+                              ? '#D97706'
+                              : '#16A34A',
+                          }}
                         >
                           {student.averageMood !== null
                             ? student.averageMood.toFixed(2)
