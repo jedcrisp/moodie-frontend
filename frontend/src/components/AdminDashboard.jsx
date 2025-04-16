@@ -97,7 +97,13 @@ export default function AdminDashboard({ user }) {
 
         for (const row of rows) {
           if (!row.studentId || !row.name) continue;
-          const studentRef = doc(db, 'schools', user.school, 'students', row.studentId);
+          const studentRef = doc(
+            db,
+            'schools',
+            user.school,
+            'students',
+            row.studentId
+          );
           await setDoc(studentRef, {
             name: row.name,
             studentId: row.studentId,
@@ -138,7 +144,16 @@ export default function AdminDashboard({ user }) {
       }}
     >
       {/* Top Right Buttons */}
-      <div style={{ position: 'fixed', top: '8px', right: '8px', display: 'flex', gap: '12px', zIndex: 10 }}>
+      <div
+        style={{
+          position: 'fixed',
+          top: '8px',
+          right: '8px',
+          display: 'flex',
+          gap: '12px',
+          zIndex: 10,
+        }}
+      >
         <label
           style={{
             display: 'flex',
@@ -219,7 +234,16 @@ export default function AdminDashboard({ user }) {
       {/* Header */}
       <header style={{ backgroundColor: 'transparent' }}>
         <div style={{ padding: '8px' }}>
-          <h1 style={{ fontSize: '1.875rem', fontWeight: '800', backgroundImage: 'linear-gradient(to right, #7C3AED, #EC4899)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>
+          <h1
+            style={{
+              fontSize: '1.875rem',
+              fontWeight: '800',
+              backgroundImage: 'linear-gradient(to right, #7C3AED, #EC4899)',
+              WebkitBackgroundClip: 'text',
+              backgroundClip: 'text',
+              color: 'transparent',
+            }}
+          >
             Moodie Dashboard: {displayName}
           </h1>
         </div>
@@ -228,28 +252,33 @@ export default function AdminDashboard({ user }) {
       {/* Main Content */}
       <main style={{ flex: 1, overflow: 'hidden' }}>
         {loading ? (
-          <div style={{ height: '100%', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <p style={{ fontSize: '1.25rem', color: '#7C3AED', animation: 'pulse 1.5s infinite' }}>
+          <div
+            style={{
+              height: '100%',
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <p
+              style={{
+                fontSize: '1.25rem',
+                color: '#7C3AED',
+                animation: 'pulse 1.5s infinite',
+              }}
+            >
               Loading student moods... 🌈
             </p>
           </div>
         ) : students.length === 0 ? (
-          <div style={{ height: '100%', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <p style={{ fontSize: '1.25rem', color: '#4B5563' }}>
-              No students found. Let’s add some smiles! 😊
-            </p>
-          </div>
-        ) : (
-          <div style={{ backgroundColor: 'white', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)', borderRadius: '0', height: '100%', width: '100%', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <h2 style={{ fontSize: '1.5rem', fontWeight: '700', color: '#1F2937' }}>
-                  Student Mood Overview
-                </h2>
-                <p style={{ marginTop: '4px', fontSize: '0.875rem', color: '#4B5563' }}>
-                  Sorted to highlight students needing support first 🌟
-                </p>
-              </div>
-            </div>
-            <div style={{ flex: 1, overflowY: 'auto', overflowX: 'auto' }}>...
-}]}
+          <div
+            style={{
+              height: '100%',
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <p style={{ fontSize: '1.25rem', color: '#4B55``
