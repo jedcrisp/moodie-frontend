@@ -190,19 +190,25 @@ export default function AdminDashboard({ user }) {
             onChange={handleCsvUpload}
           />
         </label>
-        <button
-          style={moodSelectorStyle}
-          onClick={handleMoodSelectorRedirect}
-          title="Mood Selector"
-        >
-          <Smile style={iconStyle} />
-          <span>Mood Selector</span>
-        </button>
-        <button style={signOutStyle} onClick={handleSignOut} title="Sign Out">
-          <LogOut style={iconStyle} />
-          <span>Sign Out</span>
-        </button>
-      </div>
+        {location.pathname.endsWith('/mood-selector') ? (
+         <button
+           style={backButtonStyle}
+           onClick={handleBackToDashboard}
+           title="Back to Dashboard"
+         >
+           <ArrowLeft style={iconStyle} />
+           <span>Back</span>
+         </button>
+       ) : (
+         <button
+           style={moodSelectorStyle}
+           onClick={handleMoodSelectorRedirect}
+           title="Mood Selector"
+         >
+           <Smile style={iconStyle} />
+           <span>Mood Selector</span>
+         </button>
+       )}
 
       {/* Header */}
       <header style={headerStyle}>
@@ -412,5 +418,17 @@ const tdStyle = {
   fontSize: '0.875rem',
   color: '#4B5563',
   borderBottom: '1px solid #E5E7EB',
+};
+
+const backButtonStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  padding: '8px 16px',
+  backgroundColor: '#6B7280',
+  color: 'white',
+  border: 'none',
+  borderRadius: 9999,
+  cursor: 'pointer',
 };
 const inputStyle = { width: '100%', padding: '4px 8px', fontSize: '0.875rem', border: '1px solid #D1D5DB', borderRadius: 4 };
