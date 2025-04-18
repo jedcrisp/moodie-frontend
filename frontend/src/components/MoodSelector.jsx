@@ -107,10 +107,6 @@ export default function MoodFlow({ user }) {
               borderRadius: '0.375rem',
               cursor: 'pointer',
             }}
-          >
-            <ArrowLeft size={16} /> Back to Dashboard
-          </button>
-        )}
       </div>
     );
   }
