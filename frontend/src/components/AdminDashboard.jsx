@@ -101,7 +101,10 @@ export default function AdminDashboard({ user }) {
   };
 
   // Navigate to mood selector
-  const handleMoodSelectorRedirect = () => navigate('/admin/mood-selector');
+  const handleMoodSelectorRedirect = () => {
+    console.log('→ navigating to /admin/mood-selector');
+    navigate('/admin/mood-selector', { replace: false });
+  };
 
   // Save edited note
   const saveNote = async (id) => {
