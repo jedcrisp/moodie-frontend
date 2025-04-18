@@ -107,6 +107,7 @@ export default function MoodFlow({ user }) {
               borderRadius: '0.375rem',
               cursor: 'pointer',
             }}
+            >
       </div>
     );
   }
