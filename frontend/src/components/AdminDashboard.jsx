@@ -25,6 +25,9 @@ export default function AdminDashboard({ user }) {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // detect if we’re on the nested mood‑selector route
+  const onMoodSelector = location.pathname.endsWith('/mood-selector');
+
   // Fetch students + last 5 moods
   const fetchStudentsWithMoods = async () => {
     setLoading(true);
@@ -45,15 +48,9 @@ export default function AdminDashboard({ user }) {
             moodEntries.length > 0
               ? moodEntries.reduce((sum, m) => sum + (m.score || 3), 0) / moodEntries.length
               : null;
-          return {
-            id: docSnap.id,
-            ...s,
-            moods: moodEntries,
-            averageMood: avg,
-          };
+          return { id: docSnap.id, ...s, moods: moodEntries, averageMood: avg };
         })
       );
-      // sort low→high
       data.sort((a, b) => (a.averageMood ?? 99) - (b.averageMood ?? 99));
       setStudents(data);
     } catch (err) {
@@ -98,7 +95,7 @@ export default function AdminDashboard({ user }) {
     });
   };
 
-  // Download CSV of current students table
+  // Download CSV
   const handleDownloadCsv = () => {
     const rows = students.map(stu => ({
       Name: stu.name,
@@ -120,10 +117,10 @@ export default function AdminDashboard({ user }) {
     document.body.removeChild(a);
   };
 
-  // Go to mood selector (nested route)
+  // Navigate to nested mood selector
   const handleMoodSelectorRedirect = () => navigate('mood-selector');
 
-  // Save a note inline
+  // Save inline note
   const saveNote = async id => {
     const ref = doc(db, 'schools', user.school, 'students', id);
     await updateDoc(ref, { notes: tempNote });
@@ -141,7 +138,8 @@ export default function AdminDashboard({ user }) {
           <input type="file" accept=".csv" style={{ display: 'none' }} onChange={handleCsvUpload} />
         </label>
 
-        {location.pathname.endsWith('/mood-selector') ? (
+        {/* Back button only when inside /admin/mood-selector */}
+        {onMoodSelector ? (
           <button style={backButtonStyle} onClick={() => navigate('/admin')}>
             <ArrowLeft style={iconStyle} />
             <span>Back</span>
@@ -168,80 +166,89 @@ export default function AdminDashboard({ user }) {
         <h1 style={titleStyle}>Moodie Dashboard: {user.school}</h1>
       </header>
 
-      {/* Main Table */}
-      <main style={mainStyle}>
-        {loading ? (
-          <p style={loadingStyle}>Loading student moods…</p>
-        ) : students.length === 0 ? (
-          <p style={loadingStyle}>No students found. 😊</p>
-        ) : (
-          <div style={tableContainerStyle}>
-            <table style={tableStyle}>
-              <thead style={theadStyle}>
-                <tr>
-                  <th style={thStyle}>Name</th>
-                  <th style={thStyle}>Student ID</th>
-                  <th style={thStyle}>Grade</th>
-                  <th style={thStyle}>Birthday</th>
-                  <th style={thStyle}>Last 5 Moods</th>
-                  <th style={thStyle}>Average Mood</th>
-                  <th style={thStyle}>Notes</th>
-                </tr>
-              </thead>
-              <tbody>
-                {students.map(stu => (
-                  <tr
-                    key={stu.id}
-                    style={{
-                      borderLeft:
-                        stu.averageMood <= 2
-                          ? '4px solid #EF4444'
-                          : stu.averageMood <= 3
-                          ? '4px solid #FACC15'
-                          : '4px solid #22C55E',
-                    }}
-                  >
-                    <td style={tdStyle}>{stu.name}</td>
-                    <td style={tdStyle}>{stu.studentId}</td>
-                    <td style={tdStyle}>{stu.grade}</td>
-                    <td style={tdStyle}>{stu.birthday}</td>
-                    <td style={{ ...tdStyle, fontSize: '1.5rem' }}>
-                      {stu.moods.length > 0 ? stu.moods.map((m, i) => <span key={i}>{m.emoji}</span>) : '—'}
-                    </td>
-                    <td style={tdStyle}>
-                      {stu.averageMood != null ? stu.averageMood.toFixed(2) : '—'}
-                    </td>
-                    <td style={tdStyle}>
-                      {editingId === stu.id ? (
-                        <input
-                          style={inputStyle}
-                          value={tempNote}
-                          onChange={e => setTempNote(e.target.value)}
-                          onBlur={() => saveNote(stu.id)}
-                          onKeyDown={e => e.key === 'Enter' && saveNote(stu.id)}
-                          autoFocus
-                        />
-                      ) : (
-                        <span onClick={() => { setEditingId(stu.id); setTempNote(stu.notes || ''); }}>
-                          {stu.notes || '—'}
-                        </span>
-                      )}
-                    </td>
+      {/* If we’re on /admin/mood-selector, just render the nested route here */}
+      {onMoodSelector ? (
+        <Outlet />
+      ) : (
+        <main style={mainStyle}>
+          {loading ? (
+            <p style={loadingStyle}>Loading student moods…</p>
+          ) : students.length === 0 ? (
+            <p style={loadingStyle}>No students found. 😊</p>
+          ) : (
+            <div style={tableContainerStyle}>
+              <table style={tableStyle}>
+                <thead style={theadStyle}>
+                  <tr>
+                    <th style={thStyle}>Name</th>
+                    <th style={thStyle}>Student ID</th>
+                    <th style={thStyle}>Grade</th>
+                    <th style={thStyle}>Birthday</th>
+                    <th style={thStyle}>Last 5 Moods</th>
+                    <th style={thStyle}>Average Mood</th>
+                    <th style={thStyle}>Notes</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </main>
-
-      {/* render nested mood‑selector route */}
-      <Outlet />
+                </thead>
+                <tbody>
+                  {students.map(stu => (
+                    <tr
+                      key={stu.id}
+                      style={{
+                        borderLeft:
+                          stu.averageMood <= 2
+                            ? '4px solid #EF4444'
+                            : stu.averageMood <= 3
+                            ? '4px solid #FACC15'
+                            : '4px solid #22C55E',
+                      }}
+                    >
+                      <td style={tdStyle}>{stu.name}</td>
+                      <td style={tdStyle}>{stu.studentId}</td>
+                      <td style={tdStyle}>{stu.grade}</td>
+                      <td style={tdStyle}>{stu.birthday}</td>
+                      <td style={{ ...tdStyle, fontSize: '1.5rem' }}>
+                        {stu.moods.length > 0
+                          ? stu.moods.map((m, i) => <span key={i}>{m.emoji}</span>)
+                          : '—'}
+                      </td>
+                      <td style={tdStyle}>
+                        {stu.averageMood != null ? stu.averageMood.toFixed(2) : '—'}
+                      </td>
+                      <td style={tdStyle}>
+                        {editingId === stu.id ? (
+                          <input
+                            style={inputStyle}
+                            value={tempNote}
+                            onChange={e => setTempNote(e.target.value)}
+                            onBlur={() => saveNote(stu.id)}
+                            onKeyDown={e => e.key === 'Enter' && saveNote(stu.id)}
+                            autoFocus
+                          />
+                        ) : (
+                          <span
+                            onClick={() => {
+                              setEditingId(stu.id);
+                              setTempNote(stu.notes || '');
+                            }}
+                          >
+                            {stu.notes || '—'}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </main>
+      )}
     </div>
   );
 }
 
-// Styles
+// —————— Styles ——————
+
 const containerStyle = {
   width: '100vw',
   height: '100vh',
@@ -323,7 +330,12 @@ const titleStyle = {
   color: 'transparent',
 };
 const mainStyle = { flex: 1, overflow: 'auto', padding: 16 };
-const loadingStyle = { fontSize: '1.25rem', color: '#7C3AED', textAlign: 'center', marginTop: 40 };
+const loadingStyle = {
+  fontSize: '1.25rem',
+  color: '#7C3AED',
+  textAlign: 'center',
+  marginTop: 40,
+};
 const tableContainerStyle = { width: '100%', overflowX: 'auto' };
 const tableStyle = { width: '100%', borderCollapse: 'collapse' };
 const theadStyle = {
