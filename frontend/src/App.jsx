@@ -1,42 +1,27 @@
-import React, { useEffect, useState } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import MoodFlow from './components/MoodSelector';
-import AdminDashboard from './components/AdminDashboard';
-import SignIn from './components/SignIn';
-import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
+// App.jsx
+import React, { useState, useEffect } from 'react';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import MoodSelector from './components/MoodSelector.jsx';
+import MoodFlow from './components/MoodFlow.jsx'; // Added import
+import AdminDashboard from './components/AdminDashboard.jsx';
+import SignIn from './components/SignIn.jsx';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
 
 export default function App() {
   const [user, setUser] = useState(null);
-  const [schoolDisplayName, setSchoolDisplayName] = useState('');
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   const getSchoolFromSubdomain = () => {
     const hostname = window.location.hostname;
-    const parts = hostname.split('.');
     if (hostname === 'localhost' || hostname.includes('127.0.0.1')) {
       return 'TestSchool';
     }
-    if (parts[0] === 'www') {
-      return 'TestSchool';
-    }
-    return parts[0];
+    return hostname.split('.')[0];
   };
-  const currentSchool = getSchoolFromSubdomain();
 
-  useEffect(() => {
-    const db = getFirestore();
-    const fetchSchoolName = async () => {
-      const schoolRef = doc(db, 'schools', currentSchool);
-      const schoolSnap = await getDoc(schoolRef);
-      if (schoolSnap.exists()) {
-        setSchoolDisplayName(schoolSnap.data().displayName || currentSchool);
-      } else {
-        setSchoolDisplayName(currentSchool);
-      }
-    };
-    fetchSchoolName();
-  }, [currentSchool]);
+  const currentSchool = getSchoolFromSubdomain();
 
   useEffect(() => {
     const auth = getAuth();
@@ -47,31 +32,20 @@ export default function App() {
         try {
           const userDocRef = doc(db, 'schools', currentSchool, 'users', currentUser.uid);
           const userDoc = await getDoc(userDocRef);
+
           if (userDoc.exists()) {
+            const role = userDoc.data().role || 'student';
             setUser({
-              role: userDoc.data().role || 'student',
+              role,
               name: currentUser.displayName || 'User',
               uid: currentUser.uid,
               school: currentSchool,
               studentId: userDoc.data().studentId || null,
             });
           } else {
-            const studentDocRef = doc(db, 'schools', currentSchool, 'students', currentUser.uid);
-            const studentDoc = await getDoc(studentDocRef);
-            if (studentDoc.exists()) {
-              setUser({
-                role: 'student',
-                name: studentDoc.data().name || 'User',
-                uid: currentUser.uid,
-                school: currentSchool,
-                studentId: studentDoc.data().studentId || null,
-              });
-            } else {
-              setUser(null);
-            }
+            setUser(null);
           }
-        } catch (error) {
-          console.error('Error fetching user data:', error);
+        } catch {
           setUser(null);
         }
       } else {
@@ -80,96 +54,69 @@ export default function App() {
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return unsubscribe;
   }, [currentSchool]);
 
   useEffect(() => {
-    if (!user || user.role !== 'student') return;
-    const logoutTimer = setTimeout(() => {
-      signOut(getAuth())
-        .then(() => setUser(null))
-        .catch(console.error);
-    }, 5000);
-    return () => clearTimeout(logoutTimer);
-  }, [user]);
+    if (!loading && user && user.school === currentSchool) {
+      if (user.role === 'counselor' && window.location.pathname !== '/admin') {
+        navigate('/admin');
+      } else if (user.role === 'student' && window.location.pathname !== '/') {
+        navigate('/');
+      }
+    }
+  }, [user, loading, currentSchool, navigate]);
 
   if (loading) {
     return <div>Loading...</div>;
   }
 
   return (
-    <div
-      style={{
-        width: '100dvw',
-        height: '100dvh',
-        margin: 0,
-        padding: 0,
-        overflow: 'hidden',
-      }}
-    >
-      <Routes>
-        {/* Root: redirect to sign-in if unauthenticated, else to student or counselor home */}
-        <Route
-          path="/"
-          element={
-            !user ? (
-              <Navigate to="/signin" replace />
-            ) : user.role === 'student' && user.school === currentSchool ? (
-              <div
-                style={{
-                  width: '100vw',
-                  height: '100vh',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: 'linear-gradient(to bottom right, #ffdee9, #b5fffc)',
-                }}
-              >
-                <MoodFlow user={user} />
+    <Routes>
+      {/* Student Routes */}
+      {user && user.role === 'student' && user.school === currentSchool && (
+        <>
+          <Route
+            path="/"
+            element={
+              <div className="h-screen w-screen flex items-center justify-center bg-gradient-to-br from-rose-200 to-blue-200">
+                <MoodFlow user={user} onSelect={(mood) => console.log('Selected mood:', mood)} />
               </div>
-            ) : user.role === 'counselor' && user.school === currentSchool ? (
-              <Navigate to="/admin" replace />
-            ) : (
-              <Navigate to="/signin" replace />
-            )
-          }
-        />
+            }
+          />
+          <Route
+            path="/mood-selector"
+            element={
+              <div className="h-screen w-screen flex items-center justify-center bg-gradient-to-br from-rose-200 to-blue-200">
+                <MoodFlow user={user} onSelect={(mood) => console.log('Selected mood:', mood)} />
+              </div>
+            }
+          />
+          <Route path="/signin" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </>
+      )}
 
-        {/* Student routes */}
-        {user && user.role === 'student' && user.school === currentSchool && (
-          <>
-            <Route path="/signin" element={<Navigate to="/" replace />} />
-            <Route path="/admin" element={<Navigate to="/" replace />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </>
-        )}
+      {/* Counselor/Admin Routes */}
+      {user && user.role === 'counselor' && user.school === currentSchool && (
+        <>
+          <Route path="/admin" element={<AdminDashboard user={user} />} />
+          <Route
+            path="/admin/mood-selector"
+            element={<MoodSelector user={user} onSelect={(m) => console.log('Selected mood:', m)} />}
+          />
+          <Route path="/signin" element={<Navigate to="/admin" replace />} />
+          <Route path="*" element={<Navigate to="/admin" replace />} />
+        </>
+      )}
 
-        {/* Counselor routes */}
-        {user && user.role === 'counselor' && user.school === currentSchool && (
-          <>
-            <Route path="/admin" element={<AdminDashboard user={user} />} />
-            <Route path="/signin" element={<Navigate to="/admin" replace />} />
-            <Route path="*" element={<Navigate to="/admin" replace />} />
-          </>
-        )}
-
-        {/* Unauthenticated / wrong-school */}
-        {(!user || user.school !== currentSchool) && (
-          <>
-            <Route
-              path="/signin"
-              element={
-                <SignIn
-                  currentSchool={currentSchool}
-                  displayName={schoolDisplayName}
-                />
-              }
-            />
-            <Route path="*" element={<Navigate to="/signin" replace />} />
-          </>
-        )}
-      </Routes>
-    </div>
+      {/* Unauthenticated */}
+      {(!user || user.school !== currentSchool) && (
+        <>
+          <Route path="/signin" element={<SignIn currentSchool={currentSchool} />} />
+          <Route path="*" element={<Navigate to="/signin" replace />} />
+        </>
+      )}
+    </Routes>
   );
 }
