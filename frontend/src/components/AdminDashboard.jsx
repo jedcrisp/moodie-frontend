@@ -12,8 +12,8 @@ import {
   updateDoc
 } from 'firebase/firestore';
 import { getAuth, signOut } from 'firebase/auth';
-import { LogOut, Upload, Smile, Download } from 'lucide-react';   // ← Import Download icon
-import { useNavigate, Outlet, useLocation } from 'react-router-dom';
+import { LogOut, Upload, Smile, Download } from 'lucide-react';
+import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import Papa from 'papaparse';
 
 export default function AdminDashboard({ user }) {
@@ -25,51 +25,78 @@ export default function AdminDashboard({ user }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Fetch students...
+  // 1) FETCH all students + last 5 moods
   useEffect(() => {
     async function fetchStudents() {
+      setLoading(true);
       try {
-        const studentRef = collection(db, 'schools', user.school, 'students');
-        const studentSnap = await getDocs(studentRef);
+        const ref = collection(db, 'schools', user.school, 'students');
+        const snap = await getDocs(ref);
         const data = await Promise.all(
-          studentSnap.docs.map(async docSnap => {
-            const student = docSnap.data();
+          snap.docs.map(async docSnap => {
+            const s = docSnap.data();
             const moodsRef = collection(
               db, 'schools', user.school, 'students', docSnap.id, 'moods'
             );
-            const moodSnap = await getDocs(query(moodsRef, orderBy('date','desc'), limit(5)));
-            const moodEntries = moodSnap.docs.map(d => d.data());
-            const avg = moodEntries.length
-              ? moodEntries.reduce((sum,m) => sum + (m.score||0),0)/moodEntries.length
+            const moodsSnap = await getDocs(query(moodsRef, orderBy('date','desc'), limit(5)));
+            const moods = moodsSnap.docs.map(d => d.data());
+            const avg = moods.length
+              ? moods.reduce((sum,m)=> sum + (m.score||0),0)/moods.length
               : null;
-            return { id: docSnap.id, ...student, moods: moodEntries, averageMood: avg };
+            return { id: docSnap.id, ...s, moods, averageMood: avg };
           })
         );
         setStudents(data.sort((a,b)=> (a.averageMood||99)-(b.averageMood||99)));
-      } catch(err) {
-        console.error(err);
+      } catch (e) {
+        console.error(e);
       } finally {
         setLoading(false);
       }
     }
-    if(user?.school) fetchStudents();
+    if (user?.school) fetchStudents();
   }, [db, user]);
 
-  // Sign out
+  // 2) SIGN OUT
   const handleSignOut = async () => {
     await signOut(getAuth());
     window.location.reload();
   };
 
-  // CSV upload (unchanged)...
-  const handleCsvUpload = // ...
+  // 3) CSV UPLOAD
+  const handleCsvUpload = e => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    Papa.parse(file, {
+      header: true,
+      complete: async ({ data }) => {
+        if (!Array.isArray(data)) return;
+        for (const row of data) {
+          if (!row.studentId || !row.name) continue;
+          const studentRef = doc(db, 'schools', user.school, 'students', row.studentId);
+          await setDoc(studentRef, {
+            name: row.name,
+            studentId: row.studentId,
+            grade: row.grade,
+            birthday: row.birthday,
+            notes: row.notes || ''
+          });
+        }
+        // re-fetch
+        setLoading(true);
+        await new Promise(r => setTimeout(r, 500)); // slight delay
+        navigate(0);
+      },
+      error: console.error
+    });
+  };
 
-  // Mood selector nav
-  const handleMoodSelectorRedirect = () => navigate('mood-selector');
+  // 4) NAVIGATE to Mood Selector
+  const handleMoodSelectorRedirect = () => {
+    navigate('mood-selector');
+  };
 
-  // Download CSV handler
+  // 5) DOWNLOAD CSV of current students
   const handleDownloadCsv = () => {
-    // Map to a simple array of objects
     const rows = students.map(s => ({
       Name: s.name,
       'Student ID': s.studentId,
@@ -78,7 +105,6 @@ export default function AdminDashboard({ user }) {
       'Average Mood': s.averageMood != null ? s.averageMood.toFixed(2) : '',
       Notes: s.notes || ''
     }));
-    // Convert to CSV
     const csv = Papa.unparse(rows);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -90,8 +116,13 @@ export default function AdminDashboard({ user }) {
     document.body.removeChild(a);
   };
 
-  // Save note (unchanged)...
-  const saveNote = async id => { /* ... */ };
+  // 6) SAVE edited note
+  const saveNote = async id => {
+    const ref = doc(db, 'schools', user.school, 'students', id);
+    await updateDoc(ref, { notes: tempNote });
+    setEditingId(null);
+    navigate(0); // refresh
+  };
 
   return (
     <div style={containerStyle}>
@@ -100,28 +131,21 @@ export default function AdminDashboard({ user }) {
         <label style={uploadButtonStyle}>
           <Upload style={iconStyle} />
           <span>Upload CSV</span>
-          <input type="file" accept=".csv" style={{display:'none'}} onChange={handleCsvUpload} />
+          <input type="file" accept=".csv" style={{ display:'none' }} onChange={handleCsvUpload} />
         </label>
 
-        {/* Download CSV */}
-        <button
-          style={downloadButtonStyle}
-          onClick={handleDownloadCsv}
-          title="Download CSV"
-        >
+        <button style={downloadButtonStyle} onClick={handleDownloadCsv}>
           <Download style={iconStyle} />
           <span>Download CSV</span>
         </button>
 
-        {/* Mood Selector */}
-        { !location.pathname.endsWith('/mood-selector') && (
+        {!location.pathname.endsWith('/mood-selector') && (
           <button style={moodSelectorStyle} onClick={handleMoodSelectorRedirect}>
             <Smile style={iconStyle} />
             <span>Mood Selector</span>
           </button>
         )}
 
-        {/* Sign Out */}
         <button style={signOutStyle} onClick={handleSignOut}>
           <LogOut style={iconStyle} />
           <span>Sign Out</span>
@@ -133,17 +157,62 @@ export default function AdminDashboard({ user }) {
         <h1 style={titleStyle}>Moodie Dashboard: {user.school}</h1>
       </header>
 
-      {/* Main Content */}
+      {/* Main Table */}
       <main style={mainStyle}>
-        {/* ... your existing table rendering ... */}
+        {loading ? (
+          <div style={loadingStyle}>Loading…</div>
+        ) : students.length === 0 ? (
+          <div style={loadingStyle}>No students found.</div>
+        ) : (
+          <div style={contentStyle}>
+            <table style={tableStyle}>
+              <thead style={theadStyle}>
+                <tr>
+                  <th style={thStyle}>Name</th>
+                  <th style={thStyle}>Student ID</th>
+                  <th style={thStyle}>Grade</th>
+                  <th style={thStyle}>Birthday</th>
+                  <th style={thStyle}>Avg Mood</th>
+                  <th style={thStyle}>Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {students.map(s => (
+                  <tr key={s.id} style={{ borderLeft: s.averageMood <=2 ? '4px solid red' : s.averageMood<=3 ? '4px solid orange' : '4px solid green' }}>
+                    <td style={tdStyle}>{s.name}</td>
+                    <td style={tdStyle}>{s.studentId}</td>
+                    <td style={tdStyle}>{s.grade}</td>
+                    <td style={tdStyle}>{s.birthday}</td>
+                    <td style={tdStyle}>{s.averageMood?.toFixed(2) ?? '–'}</td>
+                    <td style={tdStyle}>
+                      {editingId === s.id ? (
+                        <input
+                          style={inputStyle}
+                          value={tempNote}
+                          onChange={e=>setTempNote(e.target.value)}
+                          onBlur={()=>saveNote(s.id)}
+                          onKeyDown={e=>e.key==='Enter' && saveNote(s.id)}
+                          autoFocus
+                        />
+                      ) : (
+                        <span onClick={()=>{ setEditingId(s.id); setTempNote(s.notes||'') }}>
+                          {s.notes||'—'}
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </main>
 
-      {/* Nested routes (mood selector screen) */}
+      {/* nested mood-selector route */}
       <Outlet />
     </div>
   );
 }
-
 const containerStyle = {
   width:'100dvw', height:'100dvh', display:'flex',flexDirection:'column',
   overflow:'hidden',margin:0,padding:0,
