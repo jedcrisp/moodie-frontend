@@ -54,8 +54,11 @@ export default function AdminDashboard({ user }) {
   }, [db, user.school]);
 
   const handleSignOut = async () => {
-    await signOut(getAuth());
-    window.location.reload();
+    // Confirm sign-out only when explicitly triggered
+    if (window.confirm('Are you sure you want to sign out?')) {
+      await signOut(getAuth());
+      navigate('/'); // Redirect to login page
+    }
   };
 
   const handleCsvUpload = e => {
@@ -77,7 +80,7 @@ export default function AdminDashboard({ user }) {
             }
           );
         }
-        navigate(0);
+        navigate(0); // Refresh page
       }
     });
   };
@@ -94,6 +97,9 @@ export default function AdminDashboard({ user }) {
     navigate(0);
   };
 
+  // Check if user is a counselor (assuming user object has a role property)
+  const isCounselor = user?.role === 'counselor';
+
   return (
     <div style={containerStyle}>
       <div style={controlsStyle}>
@@ -105,16 +111,19 @@ export default function AdminDashboard({ user }) {
 
         {location.pathname.includes('mood-selector') ? (
           <button style={backButtonStyle} onClick={handleBackToDashboard}>
-            <ArrowLeft style={iconStyle} /><span>Back</span>
+            <ArrowLeft style={iconStyle} />
+            <span>Back to Dashboard</span>
           </button>
         ) : (
           <button style={moodSelectorStyle} onClick={handleMoodSelectorRedirect}>
-            <Smile style={iconStyle} /><span>Mood Selector</span>
+            <Smile style={iconStyle} />
+            <span>Mood Selector</span>
           </button>
         )}
 
         <button style={signOutStyle} onClick={handleSignOut}>
-          <LogOut style={iconStyle} /><span>Sign Out</span>
+          <LogOut style={iconStyle} />
+          <span>Sign Out</span>
         </button>
       </div>
 
@@ -125,6 +134,8 @@ export default function AdminDashboard({ user }) {
       <main style={mainStyle}>
         {loading ? (
           <div style={loadingStyle}><p>Loading… 🌈</p></div>
+        ) : location.pathname.includes('mood-selector') ? (
+          <Outlet /> // Render mood selector page
         ) : (
           <table style={tableStyle}>
             <thead style={theadStyle}>
@@ -133,8 +144,8 @@ export default function AdminDashboard({ user }) {
                 <th style={thStyle}>Student ID</th>
                 <th style={thStyle}>Grade</th>
                 <th style={thStyle}>Birthday</th>
-                <th style={thStyle}>Last 5 Moods</th>
-                <th style={thStyle}>Average Mood</th>
+                <th style={thStyle}>Last 5 Moods</th>
+                <th style={thStyle}>Average Mood</th>
                 <th style={thStyle}>Notes</th>
               </tr>
             </thead>
@@ -181,12 +192,12 @@ export default function AdminDashboard({ user }) {
                         value={tempNote}
                         onChange={e => setTempNote(e.target.value)}
                         onBlur={() => saveNote(stu.id)}
-                        onKeyDown={e => e.key==='Enter' && saveNote(stu.id)}
+                        onKeyDown={e => e.key === 'Enter' && saveNote(stu.id)}
                         autoFocus
                         style={inputStyle}
                       />
                     ) : (
-                      <span onClick={() => { setEditingId(stu.id); setTempNote(stu.notes||''); }}>
+                      <span onClick={() => { setEditingId(stu.id); setTempNote(stu.notes || ''); }}>
                         {stu.notes || '—'}
                       </span>
                     )}
@@ -197,9 +208,6 @@ export default function AdminDashboard({ user }) {
           </table>
         )}
       </main>
-
-      {/* nested /admin/mood-selector */}
-      <Outlet />
     </div>
   );
 }
