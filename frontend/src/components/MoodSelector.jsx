@@ -151,29 +151,5 @@ export default function MoodFlow({ user }) {
           </button>
         ))}
       </div>
-
-      {/* Back to dashboard for counselors */}
-      {user.role === 'counselor' && (
-        <button
-          onClick={() => navigate('/admin')}
-          style={{
-            position: 'absolute',
-            top: 20,
-            left: 20,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            padding: '0.5rem 1rem',
-            backgroundColor: '#6B7280',
-            color: 'white',
-            border: 'none',
-            borderRadius: '0.375rem',
-            cursor: 'pointer',
-          }}
-        >
-          <ArrowLeft size={16} /> Back to Dashboard
-        </button>
-      )}
-    </div>
   );
 }
