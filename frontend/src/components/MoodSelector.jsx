@@ -150,6 +150,5 @@ export default function MoodFlow({ user }) {
             {mood.emoji}
           </button>
         ))}
-      </div>
   );
 }
