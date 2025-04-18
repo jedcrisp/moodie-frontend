@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import MoodSelector from './components/MoodSelector.jsx';
-import MoodFlow from './components/MoodFlow.jsx';
 import AdminDashboard from './components/AdminDashboard.jsx';
 import SignIn from './components/SignIn.jsx';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
