@@ -261,6 +261,17 @@ const uploadButtonStyle = {
   backgroundColor:'white',border:'1px solid #A78BFA',borderRadius:9999,
   color:'#7C3AED',cursor:'pointer'
 };
+const downloadButtonStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  padding: '8px 16px',
+  backgroundColor: '#3B82F6', // blue
+  color: 'white',
+  border: 'none',
+  borderRadius: 9999,
+  cursor: 'pointer',
+};
 const moodSelectorStyle = {
   display:'flex',alignItems:'center',gap:8,padding:'8px 16px',
   backgroundColor:'#8B5CF6',color:'white',border:'none',borderRadius:9999,
