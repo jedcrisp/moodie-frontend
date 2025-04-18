@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import MoodSelector from './components/MoodSelector.jsx';
-import MoodFlow from './components/MoodSelector.jsx'; // Added import
+import MoodFlow from './components/MoodFlow.jsx';
 import AdminDashboard from './components/AdminDashboard.jsx';
 import SignIn from './components/SignIn.jsx';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
@@ -20,27 +20,22 @@ export default function App() {
     }
     return hostname.split('.')[0];
   };
-
   const currentSchool = getSchoolFromSubdomain();
 
   useEffect(() => {
     const auth = getAuth();
     const db = getFirestore();
-
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         try {
-          const userDocRef = doc(db, 'schools', currentSchool, 'users', currentUser.uid);
-          const userDoc = await getDoc(userDocRef);
-
+          const userDoc = await getDoc(doc(db, 'schools', currentSchool, 'users', currentUser.uid));
           if (userDoc.exists()) {
-            const role = userDoc.data().role || 'student';
             setUser({
-              role,
-              name: currentUser.displayName || 'User',
               uid: currentUser.uid,
+              name: currentUser.displayName || 'User',
+              role: userDoc.data().role || 'student',
               school: currentSchool,
-              studentId: userDoc.data().studentId || null,
+              studentId: userDoc.data().studentId || null
             });
           } else {
             setUser(null);
@@ -53,42 +48,39 @@ export default function App() {
       }
       setLoading(false);
     });
-
     return unsubscribe;
   }, [currentSchool]);
 
+  // upon login, redirect student to "/" and counselor to "/admin"
   useEffect(() => {
-    if (!loading && user && user.school === currentSchool) {
-      if (user.role === 'counselor' && window.location.pathname !== '/admin') {
-        navigate('/admin');
-      } else if (user.role === 'student' && window.location.pathname !== '/') {
-        navigate('/');
+    if (!loading && user) {
+      if (user.school === currentSchool) {
+        if (user.role === 'counselor') navigate('/admin', { replace: true });
+        else if (user.role === 'student') navigate('/', { replace: true });
       }
     }
   }, [user, loading, currentSchool, navigate]);
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
+  if (loading) return <div>Loading...</div>;
 
   return (
     <Routes>
-      {/* Student Routes */}
-      {user && user.role === 'student' && user.school === currentSchool && (
+      {/* STUDENT */}
+      {user?.role === 'student' && user.school === currentSchool && (
         <>
           <Route
             path="/"
             element={
-              <div className="h-screen w-screen flex items-center justify-center bg-gradient-to-br from-rose-200 to-blue-200">
-                <MoodFlow user={user} onSelect={(mood) => console.log('Selected mood:', mood)} />
+              <div className="h-screen flex items-center justify-center bg-gradient-to-br from-rose-200 to-blue-200">
+                <MoodFlow user={user} onSelect={m => console.log('Picked', m)} />
               </div>
             }
           />
           <Route
             path="/mood-selector"
             element={
-              <div className="h-screen w-screen flex items-center justify-center bg-gradient-to-br from-rose-200 to-blue-200">
-                <MoodFlow user={user} onSelect={(mood) => console.log('Selected mood:', mood)} />
+              <div className="h-screen flex items-center justify-center bg-gradient-to-br from-rose-200 to-blue-200">
+                <MoodFlow user={user} onSelect={m => console.log('Picked', m)} />
               </div>
             }
           />
@@ -97,20 +89,27 @@ export default function App() {
         </>
       )}
 
-      {/* Counselor/Admin Routes */}
-      {user && user.role === 'counselor' && user.school === currentSchool && (
+      {/* COUNSELOR / ADMIN */}
+      {user?.role === 'counselor' && user.school === currentSchool && (
         <>
           <Route path="/admin" element={<AdminDashboard user={user} />} />
+
+          {/*  ↳ mounted inside AdminDashboard via navigate('/admin/mood-selector') */}
           <Route
             path="/admin/mood-selector"
-            element={<MoodSelector user={user} onSelect={(m) => console.log('Selected mood:', m)} />}
+            element={
+              <div className="h-screen flex items-center justify-center bg-gradient-to-br from-rose-200 to-blue-200">
+                <MoodSelector user={user} onSelect={m => console.log('Picked', m)} />
+              </div>
+            }
           />
+
           <Route path="/signin" element={<Navigate to="/admin" replace />} />
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </>
       )}
 
-      {/* Unauthenticated */}
+      {/* UNAUTHENTICATED */}
       {(!user || user.school !== currentSchool) && (
         <>
           <Route path="/signin" element={<SignIn currentSchool={currentSchool} />} />
