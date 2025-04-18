@@ -27,7 +27,7 @@ export default function AdminDashboard({ user }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Set Firebase Auth persistence to LOCAL
+  // Set Firebase Auth persistence
   useEffect(() => {
     setPersistence(auth, browserLocalPersistence)
       .catch(error => console.error('Error setting auth persistence:', error));
@@ -81,7 +81,7 @@ export default function AdminDashboard({ user }) {
   const handleSignOut = async () => {
     if (window.confirm('Are you sure you want to sign out?')) {
       await signOut(auth);
-      navigate('/'); // Redirect to sign-in page
+      navigate('/');
     }
   };
 
@@ -128,10 +128,6 @@ export default function AdminDashboard({ user }) {
     navigate(0);
   };
 
-  // Debug current path
-  console.log('Current path:', location.pathname);
-
-  // Check if on mood selector page
   const isMoodSelectorPage = location.pathname === '/admin/mood-selector';
 
   return (
