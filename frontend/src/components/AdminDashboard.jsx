@@ -130,36 +130,40 @@ export default function AdminDashboard({ user }) {
 
   return (
     <div style={containerStyle}>
-      {/* Top‑Right Controls */}
-      <div style={controlsStyle}>
-        <label style={uploadButtonStyle}>
-          <Upload style={iconStyle} />
-          <span>Upload CSV</span>
-          <input type="file" accept=".csv" style={{ display: 'none' }} onChange={handleCsvUpload} />
-        </label>
+      {/* Header + Inline Controls */}
+      <header style={headerStyle}>
+        <div style={headerInnerStyle}>
+          <h1 style={titleStyle}>Moodie Dashboard: {user.school}</h1>
+          <div style={controlsStyle}>
+            <label style={uploadButtonStyle}>
+              <Upload style={iconStyle} />
+              <span>Upload CSV</span>
+              <input
+                type="file"
+                accept=".csv"
+                style={{ display: 'none' }}
+                onChange={handleCsvUpload}
+              />
+            </label>
 
-        {/* Back button only when inside /admin/mood-selector */}
-        {onMoodSelector ? (
-          <button style={backButtonStyle} onClick={() => navigate('/admin')}>
-            <ArrowLeft style={iconStyle} />
-            <span>Back</span>
-          </button>
-        ) : (
-          <button style={moodSelectorStyle} onClick={handleMoodSelectorRedirect}>
-            <Smile style={iconStyle} />
-            <span>Mood Selector</span>
-          </button>
-        )}
+            {onMoodSelector ? (
+              <button style={backButtonStyle} onClick={() => navigate('/admin')}>
+                <ArrowLeft style={iconStyle} /><span>Back</span>
+              </button>
+            ) : (
+              <button style={moodSelectorStyle} onClick={handleMoodSelectorRedirect}>
+                <Smile style={iconStyle} /><span>Mood Selector</span>
+              </button>
+            )}
 
-        <button style={downloadButtonStyle} onClick={handleDownloadCsv}>
-          Download CSV
-        </button>
+            <button style={downloadButtonStyle} onClick={handleDownloadCsv}>
+              <span>Download CSV</span>
+            </button>
 
-        <button style={signOutStyle} onClick={handleSignOut}>
-          <LogOut style={iconStyle} />
-          <span>Sign Out</span>
-        </button>
-      </div>
+            <button style={signOutStyle} onClick={handleSignOut}>
+              <LogOut style={iconStyle} /><span>Sign Out</span>
+            </button>
+          </div>
 
       {/* Header */}
       <header style={headerStyle}>
@@ -364,4 +368,10 @@ const inputStyle = {
   fontSize: '0.875rem',
   border: '1px solid #D1D5DB',
   borderRadius: 4,
+};
+const headerInnerStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  padding: '0 16px',
 };
