@@ -9,11 +9,11 @@ import {
   limit,
   doc,
   setDoc,
-  updateDoc
+  updateDoc,
 } from 'firebase/firestore';
 import { getAuth, signOut } from 'firebase/auth';
 import { Upload, LogOut, Smile, ArrowLeft } from 'lucide-react';
-import { useNavigate, Outlet, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import Papa from 'papaparse';
 
 export default function AdminDashboard({ user }) {
@@ -24,53 +24,58 @@ export default function AdminDashboard({ user }) {
   const db = getFirestore();
   const navigate = useNavigate();
   const location = useLocation();
-
-  // detect if we’re on the nested mood‑selector route
   const onMoodSelector = location.pathname.endsWith('/mood-selector');
 
-  // Fetch students + last 5 moods
-  const fetchStudentsWithMoods = async () => {
-    setLoading(true);
-    try {
-      const snap = await getDocs(collection(db, 'schools', user.school, 'students'));
-      const data = await Promise.all(
-        snap.docs.map(async docSnap => {
-          const s = docSnap.data();
-          const moodsSnap = await getDocs(
-            query(
-              collection(db, 'schools', user.school, 'students', docSnap.id, 'moods'),
-              orderBy('date', 'desc'),
-              limit(5)
-            )
-          );
-          const moodEntries = moodsSnap.docs.map(d => d.data());
-          const avg =
-            moodEntries.length > 0
-              ? moodEntries.reduce((sum, m) => sum + (m.score || 3), 0) / moodEntries.length
-              : null;
-          return { id: docSnap.id, ...s, moods: moodEntries, averageMood: avg };
-        })
-      );
-      data.sort((a, b) => (a.averageMood ?? 99) - (b.averageMood ?? 99));
-      setStudents(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // load students + last 5 moods
   useEffect(() => {
-    if (user?.school) fetchStudentsWithMoods();
-  }, [user]);
+    const fetchStudents = async () => {
+      setLoading(true);
+      try {
+        const snap = await getDocs(
+          collection(db, 'schools', user.school, 'students')
+        );
+        const arr = await Promise.all(
+          snap.docs.map(async ds => {
+            const s = ds.data();
+            const moodsSnap = await getDocs(
+              query(
+                collection(
+                  db,
+                  'schools',
+                  user.school,
+                  'students',
+                  ds.id,
+                  'moods'
+                ),
+                orderBy('date', 'desc'),
+                limit(5)
+              )
+            );
+            const moods = moodsSnap.docs.map(d => d.data());
+            const avg =
+              moods.length > 0
+                ? moods.reduce((sum, m) => sum + (m.score || 3), 0) /
+                  moods.length
+                : null;
+            return { id: ds.id, ...s, moods, averageMood: avg };
+          })
+        );
+        arr.sort((a, b) => (a.averageMood ?? 99) - (b.averageMood ?? 99));
+        setStudents(arr);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (user?.school) fetchStudents();
+  }, [db, user]);
 
-  // Sign out
+  // handlers
   const handleSignOut = async () => {
     await signOut(getAuth());
     window.location.reload();
   };
-
-  // CSV upload
   const handleCsvUpload = e => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -90,24 +95,23 @@ export default function AdminDashboard({ user }) {
             }
           );
         }
-        fetchStudentsWithMoods();
+        // reload
+        setTimeout(() => navigate('/admin', { replace: true }), 100);
       },
     });
   };
-
-  // Download CSV
   const handleDownloadCsv = () => {
-    const rows = students.map(stu => ({
-      Name: stu.name,
-      'Student ID': stu.studentId,
-      Grade: stu.grade,
-      Birthday: stu.birthday,
-      'Last 5 Moods': stu.moods.map(m => m.emoji).join(' '),
-      'Average Mood': stu.averageMood != null ? stu.averageMood.toFixed(2) : '',
-      Notes: stu.notes || '',
+    const rows = students.map(s => ({
+      Name: s.name,
+      'Student ID': s.studentId,
+      Grade: s.grade,
+      Birthday: s.birthday,
+      'Last 5 Moods': s.moods.map(m => m.emoji).join(' '),
+      'Average Mood': s.averageMood != null ? s.averageMood.toFixed(2) : '',
+      Notes: s.notes || '',
     }));
     const csv = Papa.unparse(rows);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -116,21 +120,21 @@ export default function AdminDashboard({ user }) {
     a.click();
     document.body.removeChild(a);
   };
-
-  // Navigate to nested mood selector
   const handleMoodSelectorRedirect = () => navigate('mood-selector');
 
-  // Save inline note
   const saveNote = async id => {
-    const ref = doc(db, 'schools', user.school, 'students', id);
-    await updateDoc(ref, { notes: tempNote });
+    await updateDoc(
+      doc(db, 'schools', user.school, 'students', id),
+      { notes: tempNote }
+    );
     setEditingId(null);
-    fetchStudentsWithMoods();
+    // refresh
+    setTimeout(() => navigate('/admin', { replace: true }), 100);
   };
 
   return (
     <div style={containerStyle}>
-      {/* Header + Inline Controls */}
+      {/* — Header + Controls — */}
       <header style={headerStyle}>
         <div style={headerInnerStyle}>
           <h1 style={titleStyle}>Moodie Dashboard: {user.school}</h1>
@@ -148,11 +152,16 @@ export default function AdminDashboard({ user }) {
 
             {onMoodSelector ? (
               <button style={backButtonStyle} onClick={() => navigate('/admin')}>
-                <ArrowLeft style={iconStyle} /><span>Back</span>
+                <ArrowLeft style={iconStyle} />
+                <span>Back</span>
               </button>
             ) : (
-              <button style={moodSelectorStyle} onClick={handleMoodSelectorRedirect}>
-                <Smile style={iconStyle} /><span>Mood Selector</span>
+              <button
+                style={moodSelectorStyle}
+                onClick={handleMoodSelectorRedirect}
+              >
+                <Smile style={iconStyle} />
+                <span>Mood Selector</span>
               </button>
             )}
 
@@ -161,16 +170,14 @@ export default function AdminDashboard({ user }) {
             </button>
 
             <button style={signOutStyle} onClick={handleSignOut}>
-              <LogOut style={iconStyle} /><span>Sign Out</span>
+              <LogOut style={iconStyle} />
+              <span>Sign Out</span>
             </button>
           </div>
-
-      {/* Header */}
-      <header style={headerStyle}>
-        <h1 style={titleStyle}>Moodie Dashboard: {user.school}</h1>
+        </div>
       </header>
 
-      {/* If we’re on /admin/mood-selector, just render the nested route here */}
+      {/* — Content or Nested Outlet — */}
       {onMoodSelector ? (
         <Outlet />
       ) : (
@@ -184,58 +191,52 @@ export default function AdminDashboard({ user }) {
               <table style={tableStyle}>
                 <thead style={theadStyle}>
                   <tr>
-                    <th style={thStyle}>Name</th>
-                    <th style={thStyle}>Student ID</th>
-                    <th style={thStyle}>Grade</th>
-                    <th style={thStyle}>Birthday</th>
-                    <th style={thStyle}>Last 5 Moods</th>
-                    <th style={thStyle}>Average Mood</th>
-                    <th style={thStyle}>Notes</th>
+                    {['Name','Student ID','Grade','Birthday','Last 5 Moods','Average Mood','Notes'].map(h => (
+                      <th key={h} style={thStyle}>{h}</th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {students.map(stu => (
+                  {students.map(s => (
                     <tr
-                      key={stu.id}
+                      key={s.id}
                       style={{
                         borderLeft:
-                          stu.averageMood <= 2
+                          s.averageMood <= 2
                             ? '4px solid #EF4444'
-                            : stu.averageMood <= 3
+                            : s.averageMood <= 3
                             ? '4px solid #FACC15'
                             : '4px solid #22C55E',
                       }}
                     >
-                      <td style={tdStyle}>{stu.name}</td>
-                      <td style={tdStyle}>{stu.studentId}</td>
-                      <td style={tdStyle}>{stu.grade}</td>
-                      <td style={tdStyle}>{stu.birthday}</td>
+                      <td style={tdStyle}>{s.name}</td>
+                      <td style={tdStyle}>{s.studentId}</td>
+                      <td style={tdStyle}>{s.grade}</td>
+                      <td style={tdStyle}>{s.birthday}</td>
                       <td style={{ ...tdStyle, fontSize: '1.5rem' }}>
-                        {stu.moods.length > 0
-                          ? stu.moods.map((m, i) => <span key={i}>{m.emoji}</span>)
-                          : '—'}
+                        {s.moods.length > 0 ? s.moods.map((m,i) => <span key={i}>{m.emoji}</span>) : '—'}
                       </td>
                       <td style={tdStyle}>
-                        {stu.averageMood != null ? stu.averageMood.toFixed(2) : '—'}
+                        {s.averageMood != null ? s.averageMood.toFixed(2) : '—'}
                       </td>
                       <td style={tdStyle}>
-                        {editingId === stu.id ? (
+                        {editingId === s.id ? (
                           <input
                             style={inputStyle}
                             value={tempNote}
                             onChange={e => setTempNote(e.target.value)}
-                            onBlur={() => saveNote(stu.id)}
-                            onKeyDown={e => e.key === 'Enter' && saveNote(stu.id)}
+                            onBlur={() => saveNote(s.id)}
+                            onKeyDown={e => e.key==='Enter' && saveNote(s.id)}
                             autoFocus
                           />
                         ) : (
                           <span
                             onClick={() => {
-                              setEditingId(stu.id);
-                              setTempNote(stu.notes || '');
+                              setEditingId(s.id);
+                              setTempNote(s.notes || '');
                             }}
                           >
-                            {stu.notes || '—'}
+                            {s.notes || '—'}
                           </span>
                         )}
                       </td>
@@ -261,20 +262,30 @@ const containerStyle = {
   background:
     'linear-gradient(to bottom right, rgba(255,182,193,.3), rgba(173,216,230,.3))',
 };
-const controlsStyle = {
-  position: 'fixed',
-  top: 8,
-  right: 8,
+const headerStyle = { padding: '0.5rem 1rem', background: 'white', boxShadow: '0 1px 4px rgba(0,0,0,0.1)' };
+const headerInnerStyle = {
   display: 'flex',
-  gap: 12,
-  zIndex: 10,
+  alignItems: 'center',
+  justifyContent: 'space-between',
+};
+const titleStyle = {
+  fontSize: '1.75rem',
+  fontWeight: 700,
+  background: 'linear-gradient(to right,#7C3AED,#EC4899)',
+  WebkitBackgroundClip: 'text',
+  color: 'transparent',
+};
+const controlsStyle = {
+  display: 'flex',
+  gap: '0.75rem',
 };
 const iconStyle = { width: 20, height: 20 };
+
 const uploadButtonStyle = {
   display: 'flex',
   alignItems: 'center',
-  gap: 8,
-  padding: '8px 16px',
+  gap: 6,
+  padding: '6px 12px',
   backgroundColor: 'white',
   border: '1px solid #A78BFA',
   borderRadius: 9999,
@@ -284,8 +295,8 @@ const uploadButtonStyle = {
 const downloadButtonStyle = {
   display: 'flex',
   alignItems: 'center',
-  gap: 8,
-  padding: '8px 16px',
+  gap: 6,
+  padding: '6px 12px',
   backgroundColor: '#3B82F6',
   border: 'none',
   borderRadius: 9999,
@@ -295,8 +306,8 @@ const downloadButtonStyle = {
 const moodSelectorStyle = {
   display: 'flex',
   alignItems: 'center',
-  gap: 8,
-  padding: '8px 16px',
+  gap: 6,
+  padding: '6px 12px',
   backgroundColor: '#8B5CF6',
   border: 'none',
   borderRadius: 9999,
@@ -306,8 +317,8 @@ const moodSelectorStyle = {
 const backButtonStyle = {
   display: 'flex',
   alignItems: 'center',
-  gap: 8,
-  padding: '8px 16px',
+  gap: 6,
+  padding: '6px 12px',
   backgroundColor: '#6B7280',
   border: 'none',
   borderRadius: 9999,
@@ -317,29 +328,17 @@ const backButtonStyle = {
 const signOutStyle = {
   display: 'flex',
   alignItems: 'center',
-  gap: 8,
-  padding: '8px 16px',
+  gap: 6,
+  padding: '6px 12px',
   backgroundColor: '#EC4899',
   border: 'none',
   borderRadius: 9999,
   color: 'white',
   cursor: 'pointer',
 };
-const headerStyle = { padding: 16 };
-const titleStyle = {
-  fontSize: '2rem',
-  fontWeight: 800,
-  background: 'linear-gradient(to right,#7C3AED,#EC4899)',
-  WebkitBackgroundClip: 'text',
-  color: 'transparent',
-};
-const mainStyle = { flex: 1, overflow: 'auto', padding: 16 };
-const loadingStyle = {
-  fontSize: '1.25rem',
-  color: '#7C3AED',
-  textAlign: 'center',
-  marginTop: 40,
-};
+
+const mainStyle = { flex: 1, overflow: 'auto', padding: '1rem' };
+const loadingStyle = { fontSize: '1.25rem', color: '#7C3AED', textAlign: 'center', marginTop: 40 };
 const tableContainerStyle = { width: '100%', overflowX: 'auto' };
 const tableStyle = { width: '100%', borderCollapse: 'collapse' };
 const theadStyle = {
@@ -368,10 +367,4 @@ const inputStyle = {
   fontSize: '0.875rem',
   border: '1px solid #D1D5DB',
   borderRadius: 4,
-};
-const headerInnerStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  padding: '0 16px',
 };
