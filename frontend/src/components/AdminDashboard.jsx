@@ -141,6 +141,10 @@ export default function AdminDashboard({ user }) {
           </label>
         )}
 
+        <button style={downloadButtonStyle} onClick={handleDownloadCsv}>
+          Download CSV
+          </button>
+
         {isMoodSelectorPage ? (
           <button style={backButtonStyle} onClick={handleBackToDashboard}>
             <ArrowLeft style={iconStyle} />
