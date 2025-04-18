@@ -8,9 +8,10 @@ import {
   limit,
   doc,
   setDoc,
-  updateDoc
+  updateDoc,
+  getDoc
 } from 'firebase/firestore';
-import { getAuth, signOut } from 'firebase/auth';
+import { getAuth, signOut, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { LogOut, Upload, Smile, ArrowLeft } from 'lucide-react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import Papa from 'papaparse';
@@ -20,9 +21,33 @@ export default function AdminDashboard({ user }) {
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
   const [tempNote, setTempNote] = useState('');
+  const [userRole, setUserRole] = useState(user.role || null);
   const db = getFirestore();
+  const auth = getAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Set Firebase Auth persistence to LOCAL
+  useEffect(() => {
+    setPersistence(auth, browserLocalPersistence)
+      .catch(error => console.error('Error setting auth persistence:', error));
+  }, [auth]);
+
+  // Fetch user role if not provided
+  useEffect(() => {
+    async function fetchUserRole() {
+      if (!userRole && user?.uid) {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+          setUserRole(userDoc.data().role || 'admin');
+        } else {
+          console.warn('No user role found, defaulting to admin');
+          setUserRole('admin');
+        }
+      }
+    }
+    fetchUserRole();
+  }, [db, user?.uid, userRole]);
 
   // Fetch students + moods
   useEffect(() => {
@@ -54,10 +79,9 @@ export default function AdminDashboard({ user }) {
   }, [db, user.school]);
 
   const handleSignOut = async () => {
-    // Confirm sign-out only when explicitly triggered
     if (window.confirm('Are you sure you want to sign out?')) {
-      await signOut(getAuth());
-      navigate('/'); // Redirect to login page
+      await signOut(auth);
+      navigate('/'); // Redirect to sign-in page
     }
   };
 
@@ -80,13 +104,20 @@ export default function AdminDashboard({ user }) {
             }
           );
         }
-        navigate(0); // Refresh page
+        navigate(0);
       }
     });
   };
 
-  const handleMoodSelectorRedirect = () => navigate('mood-selector');
-  const handleBackToDashboard = () => navigate('/admin');
+  const handleMoodSelectorRedirect = () => {
+    console.log('Navigating to mood-selector');
+    navigate('mood-selector');
+  };
+
+  const handleBackToDashboard = () => {
+    console.log('Navigating back to /admin');
+    navigate('/admin');
+  };
 
   const saveNote = async id => {
     await updateDoc(
@@ -97,19 +128,24 @@ export default function AdminDashboard({ user }) {
     navigate(0);
   };
 
-  // Check if user is a counselor (assuming user object has a role property)
-  const isCounselor = user?.role === 'counselor';
+  // Debug current path
+  console.log('Current path:', location.pathname);
+
+  // Check if on mood selector page
+  const isMoodSelectorPage = location.pathname === '/admin/mood-selector';
 
   return (
     <div style={containerStyle}>
       <div style={controlsStyle}>
-        <label style={uploadButtonStyle}>
-          <Upload style={iconStyle} />
-          <span>Upload CSV</span>
-          <input type="file" accept=".csv" style={{ display: 'none' }} onChange={handleCsvUpload} />
-        </label>
+        {userRole !== 'counselor' && (
+          <label style={uploadButtonStyle}>
+            <Upload style={iconStyle} />
+            <span>Upload CSV</span>
+            <input type="file" accept=".csv" style={{ display: 'none' }} onChange={handleCsvUpload} />
+          </label>
+        )}
 
-        {location.pathname.includes('mood-selector') ? (
+        {isMoodSelectorPage ? (
           <button style={backButtonStyle} onClick={handleBackToDashboard}>
             <ArrowLeft style={iconStyle} />
             <span>Back to Dashboard</span>
@@ -134,8 +170,8 @@ export default function AdminDashboard({ user }) {
       <main style={mainStyle}>
         {loading ? (
           <div style={loadingStyle}><p>Loading… 🌈</p></div>
-        ) : location.pathname.includes('mood-selector') ? (
-          <Outlet /> // Render mood selector page
+        ) : isMoodSelectorPage ? (
+          <Outlet />
         ) : (
           <table style={tableStyle}>
             <thead style={theadStyle}>
