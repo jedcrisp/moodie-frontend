@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAuth, signOut } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from './firebase';
+import { ArrowLeft } from 'lucide-react';
+import { auth, db } from './firebase'; // adjust path if needed
 
 // Mood definitions with numerical values and emojis
 const moods = [
@@ -14,7 +15,7 @@ const moods = [
   { emoji: '😴', label: 'Tired', value: 1 },
 ];
 
-// Short and kid-friendly messages
+// Short and kid‑friendly messages
 const moodMessages = {
   Happy: 'Yay! You look happy!',
   Okay: 'Thanks! Hope your day gets better.',
@@ -30,9 +31,9 @@ export default function MoodFlow({ user }) {
   const [selectedMood, setSelectedMood] = useState(null);
   const navigate = useNavigate();
 
-  // Save mood to Firestore when selected
+  // Save to Firestore when a mood is picked
   useEffect(() => {
-    if (selectedMood && user && user.studentId) {
+    if (selectedMood && user?.studentId) {
       const today = formatDate(new Date());
       const moodDocRef = doc(
         db,
@@ -44,42 +45,24 @@ export default function MoodFlow({ user }) {
         today
       );
 
-      const saveMood = async () => {
+      (async () => {
         try {
           await setDoc(moodDocRef, {
-            score: selectedMood.value, // Changed from moodValue to score
-            emoji: selectedMood.emoji, // Added emoji
-            date: today, // Added date for sorting
+            score: selectedMood.value,
+            emoji: selectedMood.emoji,
+            date: today,
             recordedAt: serverTimestamp(),
           });
-          console.log(`Saved mood ${selectedMood.value} for ${today}`);
-        } catch (error) {
-          console.error('Error saving mood:', error);
+        } catch (err) {
+          console.error('Error saving mood:', err);
         }
-      };
-
-      saveMood();
+      })();
     }
   }, [selectedMood, user]);
 
-  // When a mood is selected, sign out and go back to sign in after 5 seconds
-  useEffect(() => {
-    if (selectedMood) {
-      const timer = setTimeout(async () => {
-        const auth = getAuth();
-        try {
-          await signOut(auth);
-          console.log('User signed out after mood selection.');
-        } catch (error) {
-          console.error('Error signing out:', error);
-        }
-        navigate('/signin');
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [selectedMood, navigate]);
+  // No more auto-signout here!
 
-  // Show thank-you screen if a mood is selected
+  // Render the thank‑you screen
   if (selectedMood) {
     return (
       <div
@@ -93,41 +76,46 @@ export default function MoodFlow({ user }) {
           textAlign: 'center',
           background: 'linear-gradient(to bottom right, #FECACA, #BFDBFE)',
           padding: '1rem',
+          position: 'relative',
         }}
       >
-        <h1
-          style={{
-            fontSize: '2.5rem',
-            fontWeight: 'bold',
-            color: 'indigo',
-            marginBottom: '1.5rem',
-          }}
-        >
+        <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'indigo', marginBottom: '1.5rem' }}>
           {moodMessages[selectedMood.label]}
         </h1>
-        <div
-          style={{
-            fontSize: '12rem',
-            lineHeight: '1',
-          }}
-        >
+        <div style={{ fontSize: '12rem', lineHeight: 1 }}>
           {selectedMood.emoji}
         </div>
-        <p
-          style={{
-            fontSize: '2rem',
-            fontWeight: '600',
-            color: 'blue',
-            marginTop: '1rem',
-          }}
-        >
+        <p style={{ fontSize: '2rem', fontWeight: '600', color: 'blue', marginTop: '1rem' }}>
           {selectedMood.label}
         </p>
+
+        {/* Back to dashboard for counselors */}
+        {user.role === 'counselor' && (
+          <button
+            onClick={() => navigate('/admin')}
+            style={{
+              position: 'absolute',
+              top: 20,
+              left: 20,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.5rem 1rem',
+              backgroundColor: '#6B7280',
+              color: 'white',
+              border: 'none',
+              borderRadius: '0.375rem',
+              cursor: 'pointer',
+            }}
+          >
+            <ArrowLeft size={16} /> Back to Dashboard
+          </button>
+        )}
       </div>
     );
   }
 
-  // Otherwise, show the mood selection screen
+  // Otherwise show the mood selector
   return (
     <div
       style={{
@@ -139,25 +127,13 @@ export default function MoodFlow({ user }) {
         height: '100vh',
         width: '100vw',
         background: 'linear-gradient(to bottom right, #FBCFE8, #C7D2FE)',
+        position: 'relative',
       }}
     >
-      <h2
-        style={{
-          fontSize: '2rem',
-          fontWeight: '600',
-          color: '#1F2937',
-          textAlign: 'center',
-        }}
-      >
+      <h2 style={{ fontSize: '2rem', fontWeight: '600', color: '#1F2937', textAlign: 'center' }}>
         Hi there! How are you feeling today?
       </h2>
-      <div
-        style={{
-          display: 'flex',
-          gap: '1.5rem',
-          justifyContent: 'center',
-        }}
-      >
+      <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center' }}>
         {moods.map((mood) => (
           <button
             key={mood.label}
@@ -170,18 +146,37 @@ export default function MoodFlow({ user }) {
               cursor: 'pointer',
               fontSize: '8rem',
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'scale(1.25)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'scale(1)';
-            }}
+            onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.25)')}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
             aria-label={mood.label}
           >
             {mood.emoji}
           </button>
         ))}
       </div>
+
+      {/* Back to dashboard for counselors */}
+      {user.role === 'counselor' && (
+        <button
+          onClick={() => navigate('/admin')}
+          style={{
+            position: 'absolute',
+            top: 20,
+            left: 20,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            padding: '0.5rem 1rem',
+            backgroundColor: '#6B7280',
+            color: 'white',
+            border: 'none',
+            borderRadius: '0.375rem',
+            cursor: 'pointer',
+          }}
+        >
+          <ArrowLeft size={16} /> Back to Dashboard
+        </button>
+      )}
     </div>
   );
 }
