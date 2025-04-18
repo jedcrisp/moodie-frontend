@@ -1,4 +1,3 @@
-// src/components/AdminDashboard.jsx
 import React, { useEffect, useState } from 'react';
 import {
   getFirestore,
@@ -28,52 +27,43 @@ export default function AdminDashboard({ user }) {
   // Fetch students + moods
   useEffect(() => {
     async function fetchStudents() {
-      try {
-        const ref = collection(db, 'schools', user.school, 'students');
-        const snap = await getDocs(ref);
-        const data = await Promise.all(
-          snap.docs.map(async (d) => {
-            const s = d.data();
-            const moodsRef = collection(
-              db,
-              'schools',
-              user.school,
-              'students',
-              d.id,
-              'moods'
-            );
-            const moodsSnap = await getDocs(query(moodsRef, orderBy('date', 'desc'), limit(5)));
-            const moods = moodsSnap.docs.map(m => m.data());
-            const avg = moods.length
+      const ref = collection(db, 'schools', user.school, 'students');
+      const snap = await getDocs(ref);
+      const data = await Promise.all(
+        snap.docs.map(async d => {
+          const s = d.data();
+          const moodsSnap = await getDocs(
+            query(
+              collection(db, 'schools', user.school, 'students', d.id, 'moods'),
+              orderBy('date', 'desc'),
+              limit(5)
+            )
+          );
+          const moods = moodsSnap.docs.map(m => m.data());
+          const avg =
+            moods.length > 0
               ? moods.reduce((a, m) => a + (m.score || 3), 0) / moods.length
               : null;
-            return { id: d.id, ...s, moods, averageMood: avg };
-          })
-        );
-        setStudents(data.sort((a, b) => (a.averageMood ?? 99) - (b.averageMood ?? 99)));
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoading(false);
-      }
+          return { id: d.id, ...s, moods, averageMood: avg };
+        })
+      );
+      setStudents(data.sort((a, b) => (a.averageMood ?? 99) - (b.averageMood ?? 99)));
+      setLoading(false);
     }
-    if (user?.school) fetchStudents();
-  }, [db, user]);
+    fetchStudents();
+  }, [db, user.school]);
 
-  // Sign out
   const handleSignOut = async () => {
     await signOut(getAuth());
     window.location.reload();
   };
 
-  // CSV Upload
-  const handleCsvUpload = (e) => {
+  const handleCsvUpload = e => {
     const file = e.target.files?.[0];
     if (!file) return;
     Papa.parse(file, {
       header: true,
       complete: async ({ data }) => {
-        if (!Array.isArray(data)) return;
         for (const row of data) {
           if (!row.studentId || !row.name) continue;
           await setDoc(
@@ -83,38 +73,29 @@ export default function AdminDashboard({ user }) {
               studentId: row.studentId,
               grade: row.grade,
               birthday: row.birthday,
-              notes: row.notes || '',
+              notes: row.notes || ''
             }
           );
         }
-        setLoading(true);
-        navigate(0); // simple page refresh to re-trigger fetch
-      },
-      error: console.error,
+        navigate(0);
+      }
     });
   };
 
-  // Mood Selector <→ back toggle>
   const handleMoodSelectorRedirect = () => navigate('mood-selector');
   const handleBackToDashboard = () => navigate('/admin');
 
-  // Save note
-  const saveNote = async (id) => {
-    try {
-      await updateDoc(doc(db, 'schools', user.school, 'students', id), {
-        notes: tempNote
-      });
-      setEditingId(null);
-      setLoading(true);
-      navigate(0);
-    } catch (e) {
-      console.error(e);
-    }
+  const saveNote = async id => {
+    await updateDoc(
+      doc(db, 'schools', user.school, 'students', id),
+      { notes: tempNote }
+    );
+    setEditingId(null);
+    navigate(0);
   };
 
   return (
     <div style={containerStyle}>
-      {/* Top Controls */}
       <div style={controlsStyle}>
         <label style={uploadButtonStyle}>
           <Upload style={iconStyle} />
@@ -122,113 +103,106 @@ export default function AdminDashboard({ user }) {
           <input type="file" accept=".csv" style={{ display: 'none' }} onChange={handleCsvUpload} />
         </label>
 
-        {location.pathname.endsWith('/mood-selector') ? (
+        {location.pathname.includes('mood-selector') ? (
           <button style={backButtonStyle} onClick={handleBackToDashboard}>
-            <ArrowLeft style={iconStyle} />
-            <span>Back</span>
+            <ArrowLeft style={iconStyle} /><span>Back</span>
           </button>
         ) : (
           <button style={moodSelectorStyle} onClick={handleMoodSelectorRedirect}>
-            <Smile style={iconStyle} />
-            <span>Mood Selector</span>
+            <Smile style={iconStyle} /><span>Mood Selector</span>
           </button>
         )}
 
         <button style={signOutStyle} onClick={handleSignOut}>
-          <LogOut style={iconStyle} />
-          <span>Sign Out</span>
+          <LogOut style={iconStyle} /><span>Sign Out</span>
         </button>
       </div>
 
-      {/* Header */}
       <header style={headerStyle}>
         <h1 style={titleStyle}>Moodie Dashboard: {user.school}</h1>
       </header>
 
-      {/* Main Table */}
       <main style={mainStyle}>
         {loading ? (
           <div style={loadingStyle}><p>Loading… 🌈</p></div>
-        ) : students.length === 0 ? (
-          <div style={loadingStyle}><p>No students found. 😊</p></div>
         ) : (
-          <div style={contentStyle}>
-            <div style={introStyle}>
-              <h2 style={subtitleStyle}>Student Mood Overview</h2>
-              <p style={introTextStyle}>Sorted to highlight neediest first 🌟</p>
-            </div>
-            <div style={tableContainerStyle}>
-              <table style={tableStyle}>
-                <thead style={theadStyle}>
-                  <tr>
-                    {['Name','Student ID','Grade','Birthday','Last 5 Moods','Average Mood','Notes'].map(h => (
-                      <th key={h} style={thStyle}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {students.map((stu) => (
-                    <tr
-                      key={stu.id}
-                      style={{
-                        borderLeft:
-                          stu.averageMood <= 2 ? '4px solid #EF4444' :
-                          stu.averageMood <= 3 ? '4px solid #FACC15' :
-                          '4px solid #22C55E'
-                      }}
-                    >
-                      <td style={tdStyle}>{stu.name}</td>
-                      <td style={tdStyle}>{stu.studentId}</td>
-                      <td style={tdStyle}>{stu.grade}</td>
-                      <td style={tdStyle}>{stu.birthday}</td>
-                      <td style={{ ...tdStyle, display:'flex',gap:8,fontSize:'1.5rem' }}>
-                        {stu.moods.length>0
-                          ? stu.moods.map((m,i)=><span key={i}>{m.emoji}</span>)
-                          : <span>No moods 😴</span>}
-                      </td>
-                      <td style={tdStyle}>
-                        <span style={{
-                          color:
-                            stu.averageMood <= 2 ? '#DC2626' :
-                            stu.averageMood <= 3 ? '#D97706' :
-                            '#16A34A'
-                        }}>
-                          {stu.averageMood!=null?stu.averageMood.toFixed(2):'N/A'}
-                        </span>
-                      </td>
-                      <td style={tdStyle}>
-                        {editingId===stu.id ? (
-                          <input
-                            type="text"
-                            value={tempNote}
-                            onChange={e=>setTempNote(e.target.value)}
-                            onBlur={()=>saveNote(stu.id)}
-                            onKeyDown={e=>e.key==='Enter'&&saveNote(stu.id)}
-                            autoFocus
-                            style={inputStyle}
-                          />
-                        ) : (
-                          <span onClick={()=>{setEditingId(stu.id);setTempNote(stu.notes||'')}}>
-                            {stu.notes||'—'}
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <table style={tableStyle}>
+            <thead style={theadStyle}>
+              <tr>
+                <th style={thStyle}>Name</th>
+                <th style={thStyle}>Student ID</th>
+                <th style={thStyle}>Grade</th>
+                <th style={thStyle}>Birthday</th>
+                <th style={thStyle}>Last 5 Moods</th>
+                <th style={thStyle}>Average Mood</th>
+                <th style={thStyle}>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {students.map(stu => (
+                <tr
+                  key={stu.id}
+                  style={{
+                    borderLeft:
+                      stu.averageMood <= 2
+                        ? '4px solid #EF4444'
+                        : stu.averageMood <= 3
+                        ? '4px solid #FACC15'
+                        : '4px solid #22C55E'
+                  }}
+                >
+                  <td style={tdStyle}>{stu.name}</td>
+                  <td style={tdStyle}>{stu.studentId}</td>
+                  <td style={tdStyle}>{stu.grade}</td>
+                  <td style={tdStyle}>{stu.birthday}</td>
+                  <td style={{ ...tdStyle, display: 'flex', gap: 8, fontSize: '1.5rem' }}>
+                    {stu.moods.length
+                      ? stu.moods.map((m, i) => <span key={i}>{m.emoji}</span>)
+                      : <span>No moods yet 😴</span>}
+                  </td>
+                  <td style={tdStyle}>
+                    <span style={{
+                      color:
+                        stu.averageMood <= 2
+                          ? '#DC2626'
+                          : stu.averageMood <= 3
+                          ? '#D97706'
+                          : '#16A34A'
+                    }}>
+                      {stu.averageMood != null
+                        ? stu.averageMood.toFixed(2)
+                        : 'N/A'}
+                    </span>
+                  </td>
+                  <td style={tdStyle}>
+                    {editingId === stu.id ? (
+                      <input
+                        type="text"
+                        value={tempNote}
+                        onChange={e => setTempNote(e.target.value)}
+                        onBlur={() => saveNote(stu.id)}
+                        onKeyDown={e => e.key==='Enter' && saveNote(stu.id)}
+                        autoFocus
+                        style={inputStyle}
+                      />
+                    ) : (
+                      <span onClick={() => { setEditingId(stu.id); setTempNote(stu.notes||''); }}>
+                        {stu.notes || '—'}
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </main>
 
-      {/* Nested Route Outlet */}
+      {/* nested /admin/mood-selector */}
       <Outlet />
     </div>
   );
 }
-
-// …styles as before…
 
 const containerStyle = {
   width:'100dvw', height:'100dvh', display:'flex',flexDirection:'column',
