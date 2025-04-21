@@ -397,3 +397,11 @@ const inputStyle = {
   borderRadius: 4,
 };
 
+const searchContainerStyle = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: '1rem',
+  padding: '0 1rem',
+};
+
