@@ -12,7 +12,6 @@ import {
   setDoc,
   updateDoc,
   deleteDoc,
-  collectionGroup,
 } from 'firebase/firestore';
 import { getAuth, signOut } from 'firebase/auth';
 import { Upload, LogOut, Smile, ArrowLeft, Edit2, Check, X, Trash2 } from 'lucide-react';
@@ -129,6 +128,12 @@ export default function AdminDashboard({ user }) {
   };
 
   const handleDownloadCsv = () => {
+    // Sanitize school name for filename
+    const safeSchoolName = (user?.school || 'School')
+      .replace(/[^a-zA-Z0-9_-]/g, '_') // Replace invalid chars with underscore
+      .replace(/_+/g, '_'); // Collapse multiple underscores
+    const filename = `Moodie_${safeSchoolName}_Students.csv`;
+
     const rows = students.map(s => ({
       Name: s.name,
       'Student ID': s.studentId,
@@ -143,7 +148,7 @@ export default function AdminDashboard({ user }) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `Moodie_${user.school}_Students.csv`;
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -491,3 +496,4 @@ const inputStyle = {
   border: '1px solid #D1D5DB',
   borderRadius: 4,
 };
+```
