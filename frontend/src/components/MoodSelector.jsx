@@ -1,20 +1,3 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getAuth, signOut } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from './firebase'; // adjust path as needed
-
-// Mood definitions
-const moods = [
-  { emoji: '😄', label: 'Happy', value: 7 },
-  { emoji: '🙂', label: 'Okay',  value: 6 },
-  { emoji: '😴', label: 'Tired', value: 5 },
-  { emoji: '😢', label: 'Sad',   value: 4 },
-  { emoji: '', label: 'Upset', value: 3 },
-  { emoji: '😠', label: 'Angry',   value: 2 },
-  { emoji: '😡', label: 'Mad',   value: 1 },
-];
-
 // Friendly messagesimport React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAuth, signOut } from 'firebase/auth';
