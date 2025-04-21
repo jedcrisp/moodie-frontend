@@ -11,7 +11,6 @@ import {
   setDoc,
   updateDoc,
   deleteDoc,
-  getDoc,
 } from 'firebase/firestore';
 import { getAuth, signOut } from 'firebase/auth';
 import { Upload, LogOut, Smile, ArrowLeft, Edit2, Check, X, Trash2, Search } from 'lucide-react';
@@ -26,32 +25,17 @@ export default function AdminDashboard({ user }) {
   const [uploading, setUploading] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [tempRow, setTempRow] = useState({});
-  const [schoolDisplayName, setSchoolDisplayName] = useState('');
   const db = getFirestore();
   const navigate = useNavigate();
   const location = useLocation();
   const onMoodSelector = location.pathname.endsWith('/mood-selector');
 
-  const fetchSchoolDisplayName = async () => {
-    if (!user?.school) return;
-    try {
-      const ref = doc(db, 'schools', user.school);
-      const snap = await getDoc(ref);
-      if (snap.exists()) {
-        setSchoolDisplayName(snap.data().displayName || user.school);
-      } else {
-        setSchoolDisplayName(user.school);
-      }
-    } catch (err) {
-      console.error('Error fetching displayName:', err);
-      setSchoolDisplayName(user.school);
-    }
-  };
-
   const fetchStudents = async () => {
     setLoading(true);
     try {
-      const snap = await getDocs(collection(db, 'schools', user.school, 'students'));
+      const snap = await getDocs(
+        collection(db, 'schools', user.school, 'students')
+      );
       const arr = await Promise.all(
         snap.docs.map(async ds => {
           const s = ds.data();
@@ -78,18 +62,15 @@ export default function AdminDashboard({ user }) {
   };
 
   useEffect(() => {
-    if (user?.school) {
-      fetchStudents();
-      fetchSchoolDisplayName();
-    }
+    if (user?.school) fetchStudents();
   }, [db, user]);
 
   useEffect(() => {
     const q = searchQuery.toLowerCase();
     const filtered = students.filter(s =>
-      (s.name || '').toLowerCase().includes(q) ||
-      (s.studentId || '').toLowerCase().includes(q) ||
-      (s.notes || '').toLowerCase().includes(q)
+      s.name.toLowerCase().includes(q) ||
+      s.studentId.toLowerCase().includes(q) ||
+      (s.notes && s.notes.toLowerCase().includes(q))
     );
     setFilteredStudents(filtered);
   }, [searchQuery, students]);
@@ -198,7 +179,7 @@ export default function AdminDashboard({ user }) {
     <div style={containerStyle}>
       <header style={headerStyle}>
         <div style={headerInnerStyle}>
-          <h1 style={titleStyle}>Moodie Dashboard: {schoolDisplayName}</h1>
+          <h1 style={titleStyle}>Moodie Dashboard: {user.school}</h1>
           <div style={controlsStyle}>
             <label style={uploadButtonStyle}>
               <Upload style={iconStyle} />
@@ -215,17 +196,47 @@ export default function AdminDashboard({ user }) {
           </div>
         </div>
         <div style={searchContainerStyle}>
-          <Search style={{ width: 18, height: 18 }} />
           <input
             type="text"
             placeholder="Search by name, ID, or notes…"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={e => setSearchQuery(e.target.value)}
             style={searchInputStyle}
           />
         </div>
       </header>
-      {/* rest of your JSX remains the same */}
+
+      {onMoodSelector ? <Outlet /> : (
+        <main style={mainStyle}>
+          {loading ? (
+            <p style={loadingStyle}>Loading student moods…</p>
+          ) : (
+            <div style={tableContainerStyle}>
+              <table style={tableStyle}>
+                <thead style={theadStyle}>
+                  <tr>
+                    {["Name", "Student ID", "Grade", "Birthday", "Last 5 Moods", "Average Mood", "Notes", "Actions"].map(h => <th key={h} style={thStyle}>{h}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredStudents.map(s => (
+                    <tr key={s.id} style={{ borderLeft: s.averageMood <= 2 ? '4px solid #EF4444' : s.averageMood <= 3 ? '4px solid #FACC15' : '4px solid #22C55E' }}>
+                      <td style={tdStyle}>{editingId === s.id ? <input style={inputStyle} value={tempRow.name} onChange={e => setTempRow(p => ({ ...p, name: e.target.value }))} /> : s.name}</td>
+                      <td style={tdStyle}>{editingId === s.id ? <input style={inputStyle} value={tempRow.studentId} onChange={e => setTempRow(p => ({ ...p, studentId: e.target.value }))} /> : s.studentId}</td>
+                      <td style={tdStyle}>{editingId === s.id ? <input style={inputStyle} value={tempRow.grade} onChange={e => setTempRow(p => ({ ...p, grade: e.target.value }))} /> : s.grade}</td>
+                      <td style={tdStyle}>{editingId === s.id ? <input style={inputStyle} value={tempRow.birthday} onChange={e => setTempRow(p => ({ ...p, birthday: e.target.value }))} /> : s.birthday}</td>
+                      <td style={{ ...tdStyle, fontSize: '1.5rem' }}>{s.moods.length ? s.moods.map((m, i) => <span key={i}>{m.emoji}</span>) : '—'}</td>
+                      <td style={tdStyle}>{s.averageMood != null ? s.averageMood.toFixed(2) : '—'}</td>
+                      <td style={tdStyle}>{editingId === s.id ? <input style={inputStyle} value={tempRow.notes} onChange={e => setTempRow(p => ({ ...p, notes: e.target.value }))} /> : (s.notes || '—')}</td>
+                      <td style={tdStyle}>{editingId === s.id ? (<><button onClick={() => saveRow(s.id)}><Check style={{ width: 16, height: 16 }} /></button><button onClick={cancelEdit}><X style={{ width: 16, height: 16 }} /></button></>) : (<><button onClick={() => startEditing(s)}><Edit2 style={{ width: 16, height: 16 }} /></button><button onClick={() => deleteStudent(s.id)}><Trash2 style={{ width: 16, height: 16 }} /></button></>)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </main>
+      )}
     </div>
   );
 }
