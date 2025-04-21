@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAuth, signOut } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from './firebase'; // adjust path if needed
+import { auth, db } from './firebase'; // adjust path as needed
 
 // Mood definitions
 const moods = [
@@ -29,48 +29,55 @@ export default function MoodFlow({ user }) {
   const [selectedMood, setSelectedMood] = useState(null);
   const [counter, setCounter] = useState(3);
   const navigate = useNavigate();
-  const firebaseAuth = getAuth();
 
   // Save to Firestore on selection
   useEffect(() => {
-    if (!selectedMood || !user?.studentId) return;
-    const today = formatDate(new Date());
-    const ref = doc(
-      db,
-      'schools',
-      user.school,
-      'students',
-      user.studentId,
-      'moods',
-      today
-    );
+    if (!selectedMood || !user?.uid) return;
 
-    setDoc(ref, {
-      score:      selectedMood.value,
-      emoji:      selectedMood.emoji,
-      date:       today,
-      recordedAt: serverTimestamp(),
-    }).catch(console.error);
+    const saveMood = async () => {
+      const today = formatDate(new Date());
+      const moodRef = doc(
+        db,
+        'schools',
+        user.school,
+        'students',
+        user.uid,
+        'moods',
+        today
+      );
+
+      try {
+        await setDoc(moodRef, {
+          score:      selectedMood.value,
+          emoji:      selectedMood.emoji,
+          date:       today,
+          recordedAt: serverTimestamp(),
+        });
+        console.log('Mood saved:', selectedMood, 'for', user.uid);
+      } catch (err) {
+        console.error('Error saving mood:', err);
+      }
+    };
+
+    saveMood();
   }, [selectedMood, user]);
 
   // Start countdown when a mood is selected
   useEffect(() => {
     if (!selectedMood) return;
     setCounter(3);
-    const timer = setInterval(() => {
-      setCounter((c) => c - 1);
-    }, 1000);
+    const timer = setInterval(() => setCounter((c) => c - 1), 1000);
     return () => clearInterval(timer);
   }, [selectedMood]);
 
   // Sign out and redirect when countdown finishes
   useEffect(() => {
     if (selectedMood && counter < 0) {
-      signOut(firebaseAuth)
+      signOut(auth)
         .then(() => navigate('/signin'))
         .catch(console.error);
     }
-  }, [counter, selectedMood, navigate, firebaseAuth]);
+  }, [counter, selectedMood, navigate]);
 
   // After selection: thank you + countdown
   if (selectedMood) {
@@ -79,7 +86,9 @@ export default function MoodFlow({ user }) {
         <h1 style={thankYouHeader}>{moodMessages[selectedMood.label]}</h1>
         <div style={emojiStyle}>{selectedMood.emoji}</div>
         <p style={thankYouLabel}>{selectedMood.label}</p>
-        <p style={countdownStyle}>Signing out in {counter >= 0 ? counter : 0}...</p>
+        <p style={countdownStyle}>
+          Signing out in {counter >= 0 ? counter : 0}...
+        </p>
       </div>
     );
   }
