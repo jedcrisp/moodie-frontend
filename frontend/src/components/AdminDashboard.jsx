@@ -19,6 +19,7 @@ import Papa from 'papaparse';
 export default function AdminDashboard({ user }) {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [tempRow, setTempRow] = useState({});
   const db = getFirestore();
@@ -26,7 +27,7 @@ export default function AdminDashboard({ user }) {
   const location = useLocation();
   const onMoodSelector = location.pathname.endsWith('/mood-selector');
 
-  // Extract fetchStudents so we can call it manually
+  // Load students + last 5 moods
   const fetchStudents = async () => {
     setLoading(true);
     try {
@@ -62,53 +63,7 @@ export default function AdminDashboard({ user }) {
       arr.sort((a, b) => (a.averageMood ?? 99) - (b.averageMood ?? 99));
       setStudents(arr);
     } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const onMoodSelector = location.pathname.endsWith('/mood-selector');
-
-  // load students + last 5 moods
-  const fetchStudents = async () => {
-    setLoading(true);
-    try {
-      const snap = await getDocs(
-        collection(db, 'schools', user.school, 'students')
-      );
-      const arr = await Promise.all(
-        snap.docs.map(async ds => {
-          const s = ds.data();
-          const moodsSnap = await getDocs(
-            query(
-              collection(
-                db,
-                'schools',
-                user.school,
-                'students',
-                ds.id,
-                'moods'
-              ),
-              orderBy('date', 'desc'),
-              limit(5)
-            )
-          );
-          const moods = moodsSnap.docs.map(d => d.data());
-          const avg =
-            moods.length > 0
-              ? moods.reduce((sum, m) => sum + (m.score || 3), 0) /
-                moods.length
-              : null;
-          return { id: ds.id, ...s, moods, averageMood: avg };
-        })
-      );
-      arr.sort((a, b) => (a.averageMood ?? 99) - (b.averageMood ?? 99));
-      setStudents(arr);
-    } catch (err) {
-      console.error(err);
+      console.error('Error fetching students:', err);
     } finally {
       setLoading(false);
     }
@@ -118,34 +73,56 @@ export default function AdminDashboard({ user }) {
     if (user?.school) fetchStudents();
   }, [db, user]);
 
-  // handlers
+  // Handlers
   const handleSignOut = async () => {
-    await signOut(getAuth());
-    navigate('/signin', { replace: true });
+    try {
+      await signOut(getAuth());
+      navigate('/signin', { replace: true });
+    } catch (err) {
+      console.error('Error signing out:', err);
+    }
   };
 
-  const handleCsvUpload = e => {
+  const handleCsvUpload = async e => {
     const file = e.target.files?.[0];
     if (!file) return;
-    Papa.parse(file, {
-      header: true,
-      complete: async ({ data }) => {
-        for (const row of data) {
-          if (!row.studentId || !row.name) continue;
-          await setDoc(
-            doc(db, 'schools', user.school, 'students', row.studentId),
-            {
-              name: row.name,
-              studentId: row.studentId,
-              grade: row.grade,
-              birthday: row.birthday,
-              notes: row.notes || '',
-            }
-          );
-        }
-        setTimeout(() => navigate('/admin', { replace: true }), 100);
-      },
-    });
+    setUploading(true);
+    try {
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: async ({ data }) => {
+          if (!data.length) {
+            alert('CSV is empty or invalid.');
+            return;
+          }
+          for (const row of data) {
+            if (!row.studentId || !row.name) continue;
+            await setDoc(
+              doc(db, 'schools', user.school, 'students', row.studentId),
+              {
+                name: row.name.trim(),
+                studentId: row.studentId.trim(),
+                grade: row.grade ? row.grade.trim() : '',
+                birthday: row.birthday ? row.birthday.trim() : '',
+                notes: row.notes ? row.notes.trim() : '',
+              }
+            );
+          }
+          await fetchStudents(); // Refresh student list
+          alert('CSV uploaded successfully!');
+        },
+        error: err => {
+          console.error('Error parsing CSV:', err);
+          alert('Failed to parse CSV. Please check the file format.');
+        },
+      });
+    } catch (err) {
+      console.error('Error uploading CSV:', err);
+      alert('Failed to upload CSV. Please try again.');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleDownloadCsv = () => {
@@ -154,7 +131,7 @@ export default function AdminDashboard({ user }) {
       'Student ID': s.studentId,
       Grade: s.grade,
       Birthday: s.birthday,
-      'Last 5 Moods': s.moods.map(m => m.emoji).join(' '),
+      'Last 5 Moods': s.moods.map(m => m.emoji).join(' '),
       'Average Mood': s.averageMood != null ? s.averageMood.toFixed(2) : '',
       Notes: s.notes || '',
     }));
@@ -183,12 +160,25 @@ export default function AdminDashboard({ user }) {
   };
 
   const saveRow = async id => {
-    await updateDoc(
-      doc(db, 'schools', user.school, 'students', id),
-      tempRow
-    );
-    setEditingId(null);
-    setTimeout(() => navigate('/admin', { replace: true }), 100);
+    try {
+      // Save to Firestore
+      await updateDoc(
+        doc(db, 'schools', user.school, 'students', id),
+        tempRow
+      );
+      // Update local state
+      setStudents(prev =>
+        prev.map(student =>
+          student.id === id
+            ? { ...student, ...tempRow }
+            : student
+        )
+      );
+      setEditingId(null);
+    } catch (err) {
+      console.error('Error saving row:', err);
+      alert('Failed to save changes. Please try again.');
+    }
   };
 
   const cancelEdit = () => setEditingId(null);
@@ -202,12 +192,13 @@ export default function AdminDashboard({ user }) {
           <div style={controlsStyle}>
             <label style={uploadButtonStyle}>
               <Upload style={iconStyle} />
-              <span>Upload CSV</span>
+              <span>{uploading ? 'Uploading...' : 'Upload CSV'}</span>
               <input
                 type="file"
                 accept=".csv"
                 style={{ display: 'none' }}
                 onChange={handleCsvUpload}
+                disabled={uploading}
               />
             </label>
             {onMoodSelector ? (
@@ -244,7 +235,7 @@ export default function AdminDashboard({ user }) {
               <table style={tableStyle}>
                 <thead style={theadStyle}>
                   <tr>
-                    {[ 'Name','Student ID','Grade','Birthday','Last 5 Moods','Average Mood','Notes','Actions' ].map(h => (
+                    {['Name', 'Student ID', 'Grade', 'Birthday', 'Last 5 Moods', 'Average Mood', 'Notes', 'Actions'].map(h => (
                       <th key={h} style={thStyle}>{h}</th>
                     ))}
                   </tr>
@@ -308,7 +299,7 @@ export default function AdminDashboard({ user }) {
                         )}
                       </td>
                       <td style={{ ...tdStyle, fontSize: '1.5rem' }}>
-                        {s.moods.length > 0 ? s.moods.map((m,i) => <span key={i}>{m.emoji}</span>) : '—'}
+                        {s.moods.length > 0 ? s.moods.map((m, i) => <span key={i}>{m.emoji}</span>) : '—'}
                       </td>
                       <td style={tdStyle}>
                         {s.averageMood != null ? s.averageMood.toFixed(2) : '—'}
@@ -327,11 +318,11 @@ export default function AdminDashboard({ user }) {
                       <td style={tdStyle}>
                         {editingId === s.id ? (
                           <>
-                            <button onClick={() => saveRow(s.id)}><Check style={{ width:16,height:16 }} /></button>
-                            <button onClick={cancelEdit}><X style={{ width:16,height:16 }} /></button>
+                            <button onClick={() => saveRow(s.id)}><Check style={{ width: 16, height: 16 }} /></button>
+                            <button onClick={cancelEdit}><X style={{ width: 16, height: 16 }} /></button>
                           </>
                         ) : (
-                          <button onClick={() => startEditing(s)}><Edit2 style={{ width:16,height:16 }} /></button>
+                          <button onClick={() => startEditing(s)}><Edit2 style={{ width: 16, height: 16 }} /></button>
                         )}
                       </td>
                     </tr>
