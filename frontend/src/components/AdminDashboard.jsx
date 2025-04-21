@@ -258,3 +258,12 @@ const searchInputStyle = {
   border: '1px solid #d1d5db',
   borderRadius: 8,
 };
+
+const containerStyle = {
+  width: '100vw',
+  height: '100vh',
+  display: 'flex',
+  flexDirection: 'column',
+  background: 'linear-gradient(to bottom right, rgba(255,182,193,0.3), rgba(173,216,230,0.3))',
+};
+
