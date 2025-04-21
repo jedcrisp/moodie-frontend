@@ -30,6 +30,8 @@ export default function AdminDashboard({ user }) {
   const navigate = useNavigate();
   const location = useLocation();
   const onMoodSelector = location.pathname.endsWith('/mood-selector');
+  const [schoolDisplayName, setSchoolDisplayName] = useState('');
+
 
   const fetchStudents = async () => {
     setLoading(true);
