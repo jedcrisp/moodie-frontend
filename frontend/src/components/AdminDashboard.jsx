@@ -61,6 +61,22 @@ export default function AdminDashboard({ user }) {
     }
   };
 
+  const fetchSchoolDisplayName = async () => {
+  if (!user?.school) return;
+  try {
+    const ref = doc(db, 'schools', user.school);
+    const snap = await getDoc(ref);
+    if (snap.exists()) {
+      setSchoolDisplayName(snap.data().displayName || user.school);
+    } else {
+      setSchoolDisplayName(user.school);
+    }
+  } catch (err) {
+    console.error('Error fetching displayName:', err);
+    setSchoolDisplayName(user.school);
+  }
+};
+
   useEffect(() => {
     if (user?.school) fetchStudents();
   }, [db, user]);
