@@ -42,6 +42,10 @@ export default function SignIn({ currentSchool }) {
     fetchDisplayName();
   }, [currentSchool]);
 
+  const getEmailDomain = (email) => {
+    return email?.split('@')[1].toLowerCase();
+  };
+
   const handleGoogleSignIn = async () => {
     const provider = new GoogleAuthProvider();
     const db = getFirestore();
@@ -49,8 +53,22 @@ export default function SignIn({ currentSchool }) {
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
+      const emailDomain = getEmailDomain(user.email);
       const userDocRef = doc(db, 'schools', currentSchool, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
+
+      const schoolDocRef = doc(db, 'schools', currentSchool);
+      const schoolDoc = await getDoc(schoolDocRef);
+
+      let expectedDomain = `${currentSchool.toLowerCase()}.edu`;
+      if (schoolDoc.exists() && schoolDoc.data().emailDomain) {
+        expectedDomain = schoolDoc.data().emailDomain;
+      }
+
+      if (!emailDomain.includes(expectedDomain)) {
+        alert(`You must sign in with a ${expectedDomain} email to access this school.`);
+        return;
+      }
 
       if (!userDoc.exists()) {
         const studentDocRef = doc(db, 'schools', currentSchool, 'students', user.uid);
@@ -64,8 +82,6 @@ export default function SignIn({ currentSchool }) {
           if (counselorEmailDoc.exists() && counselorEmailDoc.data().role === 'counselor') {
             role = 'counselor';
           } else {
-            const schoolDocRef = doc(db, 'schools', currentSchool);
-            const schoolDoc = await getDoc(schoolDocRef);
             const hasCounselor = schoolDoc.exists() && schoolDoc.data().hasCounselor === true;
             role = hasCounselor ? 'student' : 'counselor';
           }
@@ -85,6 +101,11 @@ export default function SignIn({ currentSchool }) {
               studentId,
               grade: null,
               birthday: null,
+            });
+            await setDoc(userDocRef, {
+              role,
+              name: user.displayName || 'User',
+              studentId,
             });
           }
         }
