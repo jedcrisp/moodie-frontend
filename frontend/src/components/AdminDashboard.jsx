@@ -488,7 +488,7 @@ const thStyle = {
 const tdStyle = {
   padding: '8px 12px',
   fontSize: '0.875rem',
-  color: '#4B5563',
+  color: ',#4B5563',
   borderBottom: '1px solid #E5E7EB',
 };
 const inputStyle = {
