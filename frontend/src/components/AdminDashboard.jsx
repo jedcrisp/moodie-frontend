@@ -293,4 +293,64 @@ const controlsStyle = {
   gap: '0.75rem',
 };
 
+const uploadButtonStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 6,
+  padding: '6px 12px',
+  backgroundColor: 'white',
+  border: '1px solid #A78BFA',
+  borderRadius: 9999,
+  color: '#7C3AED',
+  cursor: 'pointer',
+};
+
+const downloadButtonStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 6,
+  padding: '6px 12px',
+  backgroundColor: '#3B82F6',
+  border: 'none',
+  borderRadius: 9999,
+  color: 'white',
+  cursor: 'pointer',
+};
+
+const moodSelectorStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 6,
+  padding: '6px 12px',
+  backgroundColor: '#8B5CF6',
+  border: 'none',
+  borderRadius: 9999,
+  color: 'white',
+  cursor: 'pointer',
+};
+
+const backButtonStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 6,
+  padding: '6px 12px',
+  backgroundColor: '#6B7280',
+  border: 'none',
+  borderRadius: 9999,
+  color: 'white',
+  cursor: 'pointer',
+};
+
+const signOutStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 6,
+  padding: '6px 12px',
+  backgroundColor: '#EC4899',
+  border: 'none',
+  borderRadius: 9999,
+  color: 'white',
+  cursor: 'pointer',
+};
+
 
