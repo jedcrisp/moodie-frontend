@@ -17,7 +17,17 @@ const moods = [
 ];
 
 // Friendly messages
-const moodMessages = {
+typedef moodMessages = {
+  Happy: string;
+  Okay: string;
+  Tired: string;
+  Sad: string;
+  Upset: string;
+  Angry: string;
+  Mad: string;
+};
+
+const moodMessages: moodMessages = {
   Happy: 'Yay! You look happy!',
   Okay: 'Thanks! Hope your day gets better.',
   Tired: 'Rest up and feel better!',
@@ -28,10 +38,10 @@ const moodMessages = {
 };
 
 // Format to YYYY-MM-DD
-const formatDate = (date) => date.toISOString().split('T')[0];
+const formatDate = (date: Date) => date.toISOString().split('T')[0];
 
-export default function MoodFlow({ user }) {
-  const [selectedMood, setSelectedMood] = useState(null);
+export default function MoodFlow({ user }: { user: { uid: string; school: string } }) {
+  const [selectedMood, setSelectedMood] = useState<typeof moods[0] | null>(null);
   const [counter, setCounter] = useState(3);
   const navigate = useNavigate();
 
@@ -106,7 +116,14 @@ export default function MoodFlow({ user }) {
       <h2 style={pickerHeader}>Hi there! How are you feeling today?</h2>
       <div style={buttonRow}>
         {moods.map((m) => (
-          <button$1 aria-label={m.label} title={m.label}
+          <button
+            key={m.label}
+            onClick={() => setSelectedMood(m)}
+            title={m.label}
+            aria-label={m.label}
+            style={emojiButton}
+            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.25)'}
+            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
           >
             {m.emoji}
           </button>
