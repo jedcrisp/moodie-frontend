@@ -13,7 +13,7 @@ import {
   deleteDoc,
 } from 'firebase/firestore';
 import { getAuth, signOut } from 'firebase/auth';
-import { Upload, LogOut, Smile, ArrowLeft, Edit2, Check, X, Trash2 } from 'lucide-react';
+import { Upload, LogOut, Smile, ArrowLeft, Edit2, Check, X, Trash2, Search } from 'lucide-react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import Papa from 'papaparse';
 
@@ -68,9 +68,9 @@ export default function AdminDashboard({ user }) {
   useEffect(() => {
     const q = searchQuery.toLowerCase();
     const filtered = students.filter(s =>
-      (s.name || '').toLowerCase().includes(q) ||
-      (s.studentId || '').toLowerCase().includes(q) ||
-      (s.notes || '').toLowerCase().includes(q)
+      s.name.toLowerCase().includes(q) ||
+      s.studentId.toLowerCase().includes(q) ||
+      (s.notes && s.notes.toLowerCase().includes(q))
     );
     setFilteredStudents(filtered);
   }, [searchQuery, students]);
@@ -196,44 +196,54 @@ export default function AdminDashboard({ user }) {
           </div>
         </div>
         <div style={searchContainerStyle}>
-          <span style={searchIconStyle}>🔍</span>
-          <input
-            type="text"
-            placeholder="Search by name, ID, or notes…"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={searchInputStyle}
-          />
-        </div>
+            <span style={searchIconStyle}>🔍</span>
+              <input
+                type="text"
+                placeholder="Search by name, ID, or notes…"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={searchInputStyle}
+                />
+              </div>
       </header>
-      {/* rest of your JSX remains the same */}
+
+      {onMoodSelector ? <Outlet /> : (
+        <main style={mainStyle}>
+          {loading ? (
+            <p style={loadingStyle}>Loading student moods…</p>
+          ) : (
+            <div style={tableContainerStyle}>
+              <table style={tableStyle}>
+                <thead style={theadStyle}>
+                  <tr>
+                    {["Name", "Student ID", "Grade", "Birthday", "Last 5 Moods", "Average Mood", "Notes", "Actions"].map(h => <th key={h} style={thStyle}>{h}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredStudents.map(s => (
+                    <tr key={s.id} style={{ borderLeft: s.averageMood <= 2 ? '4px solid #EF4444' : s.averageMood <= 3 ? '4px solid #FACC15' : '4px solid #22C55E' }}>
+                      <td style={tdStyle}>{editingId === s.id ? <input style={inputStyle} value={tempRow.name} onChange={e => setTempRow(p => ({ ...p, name: e.target.value }))} /> : s.name}</td>
+                      <td style={tdStyle}>{editingId === s.id ? <input style={inputStyle} value={tempRow.studentId} onChange={e => setTempRow(p => ({ ...p, studentId: e.target.value }))} /> : s.studentId}</td>
+                      <td style={tdStyle}>{editingId === s.id ? <input style={inputStyle} value={tempRow.grade} onChange={e => setTempRow(p => ({ ...p, grade: e.target.value }))} /> : s.grade}</td>
+                      <td style={tdStyle}>{editingId === s.id ? <input style={inputStyle} value={tempRow.birthday} onChange={e => setTempRow(p => ({ ...p, birthday: e.target.value }))} /> : s.birthday}</td>
+                      <td style={{ ...tdStyle, fontSize: '1.5rem' }}>{s.moods.length ? s.moods.map((m, i) => <span key={i}>{m.emoji}</span>) : '—'}</td>
+                      <td style={tdStyle}>{s.averageMood != null ? s.averageMood.toFixed(2) : '—'}</td>
+                      <td style={tdStyle}>{editingId === s.id ? <input style={inputStyle} value={tempRow.notes} onChange={e => setTempRow(p => ({ ...p, notes: e.target.value }))} /> : (s.notes || '—')}</td>
+                      <td style={tdStyle}>{editingId === s.id ? (<><button onClick={() => saveRow(s.id)}><Check style={{ width: 16, height: 16 }} /></button><button onClick={cancelEdit}><X style={{ width: 16, height: 16 }} /></button></>) : (<><button onClick={() => startEditing(s)}><Edit2 style={{ width: 16, height: 16 }} /></button><button onClick={() => deleteStudent(s.id)}><Trash2 style={{ width: 16, height: 16 }} /></button></>)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </main>
+      )}
     </div>
   );
 }
 
 // Add search styles
-const searchContainerStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '0.5rem',
-  padding: '0.5rem 1rem',
-  marginTop: '1rem',
-};
-
-const searchIconStyle = {
-  fontSize: '1.25rem',
-  color: '#4B5563',
-};
-
-const searchInputStyle = {
-  padding: '0.5rem 1rem',
-  fontSize: '1rem',
-  border: '1px solid #D1D5DB',
-  borderRadius: '9999px',
-  width: '100%',
-  maxWidth: '300px',
-};
-
+// — Styles —
 const containerStyle = {
   width: '100vw',
   height: '100vh',
@@ -385,4 +395,26 @@ const inputStyle = {
   fontSize: '0.875rem',
   border: '1px solid #D1D5DB',
   borderRadius: 4,
+};
+
+const searchContainerStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.5rem',
+  padding: '0.5rem 1rem',
+  marginTop: '1rem',
+};
+
+const searchIconStyle = {
+  fontSize: '1.25rem',
+  color: '#4B5563',
+};
+
+const searchInputStyle = {
+  padding: '0.5rem 1rem',
+  fontSize: '1rem',
+  border: '1px solid #D1D5DB',
+  borderRadius: '9999px',
+  width: '100%',
+  maxWidth: '300px',
 };
