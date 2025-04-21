@@ -11,7 +11,7 @@ import {
   getDoc,
   setDoc,
 } from 'firebase/firestore';
-import { auth } from '../firebase';
+import { auth } from './firebase';
 import { useNavigate } from 'react-router-dom';
 
 // Helpers to format school slugs into human-readable names
