@@ -393,4 +393,7 @@ const inputStyle = {
   width: '100%',
   padding: 4,
   fontSize: '0.875rem',
-  border: '1px solid
+  border: '1px solid #D1D5DB',
+  borderRadius: 4,
+};
+
