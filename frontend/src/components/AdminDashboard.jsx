@@ -405,3 +405,13 @@ const searchContainerStyle = {
   padding: '0 1rem',
 };
 
+const searchInputStyle = {
+  padding: '0.5rem 1rem',
+  fontSize: '1rem',
+  border: '1px solid #D1D5DB',
+  borderRadius: '9999px',
+  width: '100%',
+  maxWidth: '300px',
+};
+
+
