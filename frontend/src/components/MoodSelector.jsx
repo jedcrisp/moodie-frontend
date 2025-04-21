@@ -1,19 +1,19 @@
-// src/components/MoodFlow.jsx
+// src/components/MoodSelector.tsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAuth, signOut } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from './firebase'; // adjust path as needed
+import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
+import { auth, db } from './firebase'; // Adjust path as needed
 
-// Mood definitions with Upset emoji
+// Mood definitions
 const moods = [
   { emoji: '😄', label: 'Happy', value: 7 },
-  { emoji: '🙂', label: 'Okay',  value: 6 },
+  { emoji: '🙂', label: 'Okay', value: 6 },
   { emoji: '😴', label: 'Tired', value: 5 },
-  { emoji: '😢', label: 'Sad',   value: 4 },
+  { emoji: '😢', label: 'Sad', value: 4 },
   { emoji: '😟', label: 'Upset', value: 3 },
   { emoji: '😠', label: 'Angry', value: 2 },
-  { emoji: '😡', label: 'Mad',   value: 1 },
+  { emoji: '😡', label: 'Mad', value: 1 },
 ];
 
 // Friendly messages
@@ -27,21 +27,45 @@ const moodMessages = {
   Mad: 'I can see you’re mad—take a breath and hang in there!',
 };
 
-// Format to YYYY-MM-DD = (date: Date) => date.toISOString().split('T')[0];
+// Format date to YYYY-MM-DD
+const formatDate = (date: Date) => date.toISOString().split('T')[0];
 
-export default function MoodFlow({ user }: { user: { uid: string; school: string } }) {
+interface User {
+  uid: string;
+  school: string;
+  role?: string;
+}
+
+export default function MoodSelector({ user }: { user: User }) {
   const [selectedMood, setSelectedMood] = useState<typeof moods[0] | null>(null);
   const [counter, setCounter] = useState(3);
+  const [userRole, setUserRole] = useState<string | null>(user.role || null);
   const navigate = useNavigate();
 
-  // Save to Firestore on selection (allows multiple per day)
+  // Fetch user role if not provided
+  useEffect(() => {
+    async function fetchUserRole() {
+      if (!userRole && user?.uid) {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+          setUserRole(userDoc.data().role || 'student');
+        } else {
+          console.warn('No user role found, defaulting to student');
+          setUserRole('student');
+        }
+      }
+    }
+    fetchUserRole();
+  }, [user?.uid, userRole]);
+
+  // Save to Firestore on selection
   useEffect(() => {
     if (!selectedMood || !user?.uid) return;
 
     const saveMood = async () => {
       const today = formatDate(new Date());
       const timestamp = Date.now();
-      const docId = `${today}_${timestamp}`; // e.g. "2025-04-21_1682085600000"
+      const docId = `${today}_${timestamp}`;
       const moodRef = doc(
         db,
         'schools',
@@ -54,9 +78,9 @@ export default function MoodFlow({ user }: { user: { uid: string; school: string
 
       try {
         await setDoc(moodRef, {
-          score:      selectedMood.value,
-          emoji:      selectedMood.emoji,
-          date:       today,
+          score: selectedMood.value,
+          emoji: selectedMood.emoji,
+          date: today,
           recordedAt: serverTimestamp(),
         });
         console.log('Mood saved:', selectedMood, 'for', user.uid, 'id:', docId);
@@ -68,33 +92,42 @@ export default function MoodFlow({ user }: { user: { uid: string; school: string
     saveMood();
   }, [selectedMood, user]);
 
-  // Start countdown when a mood is selected
+  // Start countdown only for non-counselors
   useEffect(() => {
-    if (!selectedMood) return;
+    if (!selectedMood || userRole === 'counselor') return;
     setCounter(3);
     const timer = setInterval(() => setCounter((c) => c - 1), 1000);
     return () => clearInterval(timer);
-  }, [selectedMood]);
+  }, [selectedMood, userRole]);
 
-  // Sign out and redirect when countdown finishes
+  // Sign out and redirect only for non-counselors when countdown finishes
   useEffect(() => {
-    if (selectedMood && counter < 0) {
+    if (selectedMood && counter < 0 && userRole !== 'counselor') {
       signOut(auth)
         .then(() => navigate('/signin'))
         .catch(console.error);
     }
-  }, [counter, selectedMood, navigate]);
+  }, [counter, selectedMood, navigate, userRole]);
 
-  // After selection: thank you + countdown
+  // After selection: thank you + countdown (show countdown only for non-counselors)
   if (selectedMood) {
     return (
       <div style={thankYouContainer}>
         <h1 style={thankYouHeader}>{moodMessages[selectedMood.label]}</h1>
         <div style={emojiStyle}>{selectedMood.emoji}</div>
         <p style={thankYouLabel}>{selectedMood.label}</p>
-        <p style={countdownStyle}>
-          Signing out in {counter >= 0 ? counter : 0}...
-        </p>
+        {userRole !== 'counselor' ? (
+          <p style={countdownStyle}>
+            Signing out in {counter >= 0 ? counter : 0}...
+          </p>
+        ) : (
+          <button
+            onClick={() => navigate('/admin')}
+            style={backButtonStyle}
+          >
+            Back to Dashboard
+          </button>
+        )}
       </div>
     );
   }
@@ -111,8 +144,8 @@ export default function MoodFlow({ user }: { user: { uid: string; school: string
             title={m.label}
             aria-label={m.label}
             style={emojiButton}
-            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.25)'}
-            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.25)')}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
           >
             {m.emoji}
           </button>
@@ -122,68 +155,68 @@ export default function MoodFlow({ user }: { user: { uid: string; school: string
   );
 }
 
-// — Styles —
+// Styles
 const pickerContainer = {
-  display:        'flex',
-  flexDirection:  'column',
-  alignItems:     'center',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
   justifyContent: 'center',
-  gap:            '1.5rem',
-  height:         '100vh',
-  width:          '100vw',
-  background:     'linear-gradient(to bottom right, #FBCFE8, #C7D2FE)',
+  gap: '1.5rem',
+  height: '100vh',
+  width: '100vw',
+  background: 'linear-gradient(to bottom right, #FBCFE8, #C7D2FE)',
 };
 
 const pickerHeader = {
-  fontSize:   '2rem',
+  fontSize: '2rem',
   fontWeight: 600,
-  color:      '#1F2937',
-  textAlign:  'center',
+  color: '#1F2937',
+  textAlign: 'center',
 };
 
 const buttonRow = {
-  display:        'flex',
-  gap:            '1.5rem',
+  display: 'flex',
+  gap: '1.5rem',
   justifyContent: 'center',
 };
 
 const emojiButton = {
-  background:   'transparent',
-  border:       'none',
-  padding:      0,
-  cursor:       'pointer',
-  fontSize:     '8rem',
-  transition:   'transform 0.2s',
+  background: 'transparent',
+  border: 'none',
+  padding: 0,
+  cursor: 'pointer',
+  fontSize: '8rem',
+  transition: 'transform 0.2s',
 };
 
 const thankYouContainer = {
-  display:        'flex',
-  flexDirection:  'column',
-  alignItems:     'center',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
   justifyContent: 'center',
-  textAlign:      'center',
-  height:         '100vh',
-  width:          '100vw',
-  background:     'linear-gradient(to bottom right, #FECACA, #BFDBFE)',
-  padding:        '1rem',
+  textAlign: 'center',
+  height: '100vh',
+  width: '100vw',
+  background: 'linear-gradient(to bottom right, #FECACA, #BFDBFE)',
+  padding: '1rem',
 };
 
 const thankYouHeader = {
-  fontSize:     '2.5rem',
-  fontWeight:   'bold',
-  color:        'indigo',
+  fontSize: '2.5rem',
+  fontWeight: 'bold',
+  color: 'indigo',
   marginBottom: '1.5rem',
 };
 
 const emojiStyle = {
-  fontSize:  '12rem',
-  lineHeight:'1',
+  fontSize: '12rem',
+  lineHeight: '1',
 };
 
 const thankYouLabel = {
-  fontSize:   '2rem',
+  fontSize: '2rem',
   fontWeight: 600,
-  color:      'blue',
+  color: 'blue',
   marginTop: '1rem',
 };
 
@@ -192,4 +225,15 @@ const countdownStyle = {
   fontSize: '1.25rem',
   color: '#374151',
   fontWeight: 500,
+};
+
+const backButtonStyle = {
+  marginTop: '2rem',
+  padding: '8px 16px',
+  backgroundColor: '#6B7280',
+  color: 'white',
+  border: 'none',
+  borderRadius: '9999px',
+  cursor: 'pointer',
+  fontSize: '1rem',
 };
