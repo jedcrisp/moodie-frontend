@@ -264,6 +264,33 @@ const containerStyle = {
   height: '100vh',
   display: 'flex',
   flexDirection: 'column',
-  background: 'linear-gradient(to bottom right, rgba(255,182,193,0.3), rgba(173,216,230,0.3))',
+  background:
+    'linear-gradient(to bottom right, rgba(255,182,193,0.3), rgba(173,216,230,0.3))',
 };
+
+const headerStyle = {
+  padding: '0.5rem 1rem',
+  background: 'white',
+  boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+};
+
+const headerInnerStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+};
+
+const titleStyle = {
+  fontSize: '1.75rem',
+  fontWeight: 700,
+  background: 'linear-gradient(to right, #7C3AED, #EC4899)',
+  WebkitBackgroundClip: 'text',
+  color: 'transparent',
+};
+
+const controlsStyle = {
+  display: 'flex',
+  gap: '0.75rem',
+};
+
 
