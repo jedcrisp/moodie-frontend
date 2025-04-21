@@ -106,7 +106,7 @@ export default function MoodFlow({ user }) {
       <h2 style={pickerHeader}>Hi there! How are you feeling today?</h2>
       <div style={buttonRow}>
         {moods.map((m) => (
-          <button
+          <button title={m.label}
             key={m.label}
             onClick={() => setSelectedMood(m)}
             style={emojiButton}
