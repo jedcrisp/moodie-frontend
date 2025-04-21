@@ -1,4 +1,4 @@
-// src/components/MoodSelector.tsx
+// src/components/MoodSelector.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAuth, signOut } from 'firebase/auth';
@@ -28,18 +28,12 @@ const moodMessages = {
 };
 
 // Format date to YYYY-MM-DD
-const formatDate = (date: Date) => date.toISOString().split('T')[0];
+const formatDate = (date) => date.toISOString().split('T')[0];
 
-interface User {
-  uid: string;
-  school: string;
-  role?: string;
-}
-
-export default function MoodSelector({ user }: { user: User }) {
-  const [selectedMood, setSelectedMood] = useState<typeof moods[0] | null>(null);
+export default function MoodSelector({ user }) {
+  const [selectedMood, setSelectedMood] = useState(null);
   const [counter, setCounter] = useState(3);
-  const [userRole, setUserRole] = useState<string | null>(user.role || null);
+  const [userRole, setUserRole] = useState(user.role || null);
   const navigate = useNavigate();
 
   // Fetch user role if not provided
