@@ -129,10 +129,12 @@ export default function AdminDashboard({ user }) {
 
   const handleDownloadCsv = () => {
     // Sanitize school name for filename
-    const safeSchoolName = (user?.school || 'School')
+    const schoolName = typeof user?.school === 'string' && user.school.trim() ? user.school : 'School';
+    const safeSchoolName = schoolName
       .replace(/[^a-zA-Z0-9_-]/g, '_') // Replace invalid chars with underscore
-      .replace(/_+/g, '_'); // Collapse multiple underscores
-    const filename = `Moodie_${safeSchoolName}_Students.csv`;
+      .replace(/_+/g, '_') // Collapse multiple underscores
+      || 'School'; // Fallback if empty after sanitization
+    const filename = 'Moodie_' + safeSchoolName + '_Students.csv';
 
     const rows = students.map(s => ({
       Name: s.name,
