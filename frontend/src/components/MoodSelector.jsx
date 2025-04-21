@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAuth, signOut } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { ArrowLeft } from 'lucide-react';
 import { auth, db } from './firebase'; // adjust path if needed
 
 // Mood definitions
@@ -28,6 +27,9 @@ const formatDate = (date) => date.toISOString().split('T')[0];
 
 export default function MoodFlow({ user }) {
   const [selectedMood, setSelectedMood] = useState(null);
+  const [counter, setCounter] = useState(3);
+  const navigate = useNavigate();
+  const firebaseAuth = getAuth();
 
   // Save to Firestore on selection
   useEffect(() => {
@@ -51,37 +53,49 @@ export default function MoodFlow({ user }) {
     }).catch(console.error);
   }, [selectedMood, user]);
 
-  // If picked, show thank‑you
+  // Start countdown when a mood is selected
+  useEffect(() => {
+    if (!selectedMood) return;
+    setCounter(3);
+    const timer = setInterval(() => {
+      setCounter((c) => c - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [selectedMood]);
+
+  // Sign out and redirect when countdown finishes
+  useEffect(() => {
+    if (selectedMood && counter < 0) {
+      signOut(firebaseAuth)
+        .then(() => navigate('/signin'))
+        .catch(console.error);
+    }
+  }, [counter, selectedMood, navigate, firebaseAuth]);
+
+  // After selection: thank you + countdown
   if (selectedMood) {
     return (
       <div style={thankYouContainer}>
-        <h1 style={thankYouHeader}>
-          {moodMessages[selectedMood.label]}
-        </h1>
-        <div style={emojiStyle}>
-          {selectedMood.emoji}
-        </div>
-        <p style={thankYouLabel}>
-          {selectedMood.label}
-        </p>
+        <h1 style={thankYouHeader}>{moodMessages[selectedMood.label]}</h1>
+        <div style={emojiStyle}>{selectedMood.emoji}</div>
+        <p style={thankYouLabel}>{selectedMood.label}</p>
+        <p style={countdownStyle}>Signing out in {counter >= 0 ? counter : 0}...</p>
       </div>
     );
   }
 
-  // Otherwise, show picker
+  // Mood picker
   return (
     <div style={pickerContainer}>
-      <h2 style={pickerHeader}>
-        Hi there! How are you feeling today?
-      </h2>
+      <h2 style={pickerHeader}>Hi there! How are you feeling today?</h2>
       <div style={buttonRow}>
         {moods.map((m) => (
           <button
             key={m.label}
             onClick={() => setSelectedMood(m)}
             style={emojiButton}
-            onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.25)'}
-            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.25)'}
+            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
             aria-label={m.label}
           >
             {m.emoji}
@@ -155,4 +169,11 @@ const thankYouLabel = {
   fontWeight: 600,
   color:      'blue',
   marginTop: '1rem',
+};
+
+const countdownStyle = {
+  marginTop: '2rem',
+  fontSize: '1.25rem',
+  color: '#374151',
+  fontWeight: 500,
 };
