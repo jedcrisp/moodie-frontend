@@ -27,48 +27,51 @@ export default function AdminDashboard({ user }) {
   const onMoodSelector = location.pathname.endsWith('/mood-selector');
 
   // load students + last 5 moods
+  const fetchStudents = async () => {
+    setLoading(true);
+    try {
+      const snap = await getDocs(
+        collection(db, 'schools', user.school, 'students')
+      );
+      const arr = await Promise.all(
+        snap.docs.map(async ds => {
+          const s = ds.data();
+          const moodsSnap = await getDocs(
+            query(
+              collection(
+                db,
+                'schools',
+                user.school,
+                'students',
+                ds.id,
+                'moods'
+              ),
+              orderBy('date', 'desc'),
+              limit(5)
+            )
+          );
+          const moods = moodsSnap.docs.map(d => d.data());
+          const avg =
+            moods.length > 0
+              ? moods.reduce((sum, m) => sum + (m.score || 3), 0) /
+                moods.length
+              : null;
+          return { id: ds.id, ...s, moods, averageMood: avg };
+        })
+      );
+      arr.sort((a, b) => (a.averageMood ?? 99) - (b.averageMood ?? 99));
+      setStudents(arr);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchStudents = async () => {
-      setLoading(true);
-      try {
-        const snap = await getDocs(
-          collection(db, 'schools', user.school, 'students')
-        );
-        const arr = await Promise.all(
-          snap.docs.map(async ds => {
-            const s = ds.data();
-            const moodsSnap = await getDocs(
-              query(
-                collection(
-                  db,
-                  'schools',
-                  user.school,
-                  'students',
-                  ds.id,
-                  'moods'
-                ),
-                orderBy('date', 'desc'),
-                limit(5)
-              )
-            );
-            const moods = moodsSnap.docs.map(d => d.data());
-            const avg =
-              moods.length > 0
-                ? moods.reduce((sum, m) => sum + (m.score || 3), 0) /
-                  moods.length
-                : null;
-            return { id: ds.id, ...s, moods, averageMood: avg };
-          })
-        );
-        arr.sort((a, b) => (a.averageMood ?? 99) - (b.averageMood ?? 99));
-        setStudents(arr);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
     if (user?.school) fetchStudents();
+  }, [db, user]);
+?.school) fetchStudents();
   }, [db, user]);
 
   // handlers
