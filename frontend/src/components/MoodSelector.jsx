@@ -106,7 +106,7 @@ export default function MoodFlow({ user }) {
       <h2 style={pickerHeader}>Hi there! How are you feeling today?</h2>
       <div style={buttonRow}>
         {moods.map((m) => (
-          <button$1 title={m.label} title={m.label} title={m.label} title={m.label} aria-label={m.label}
+          <button$1 aria-label={m.label} title={m.label}
           >
             {m.emoji}
           </button>
@@ -187,4 +187,3 @@ const countdownStyle = {
   color: '#374151',
   fontWeight: 500,
 };
-
