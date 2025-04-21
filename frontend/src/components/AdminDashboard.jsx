@@ -11,6 +11,7 @@ import {
   setDoc,
   updateDoc,
   deleteDoc,
+  getDoc
 } from 'firebase/firestore';
 import { getAuth, signOut } from 'firebase/auth';
 import { Upload, LogOut, Smile, ArrowLeft, Edit2, Check, X, Trash2, Search } from 'lucide-react';
@@ -78,7 +79,9 @@ export default function AdminDashboard({ user }) {
 };
 
   useEffect(() => {
-    if (user?.school) fetchStudents();
+    if (user?.school) 
+    fetchStudents();
+    fetchSchoolDisplayName(); 
   }, [db, user]);
 
   useEffect(() => {
@@ -195,7 +198,7 @@ export default function AdminDashboard({ user }) {
     <div style={containerStyle}>
       <header style={headerStyle}>
         <div style={headerInnerStyle}>
-          <h1 style={titleStyle}>Moodie Dashboard: {user.school}</h1>
+          <h1 style={titleStyle}>Moodie Dashboard: {schoolDisplayName}</h1>
           <div style={controlsStyle}>
             <label style={uploadButtonStyle}>
               <Upload style={iconStyle} />
