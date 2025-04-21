@@ -299,4 +299,125 @@ export default function AdminDashboard({ user }) {
   );
 }
 
-// Styles omitted for brevity (reuse your existing style objects)
+// — Styles —
+const containerStyle = {
+  width: '100vw',
+  height: '100vh',
+  display: 'flex',
+  flexDirection: 'column',
+  background:
+    'linear-gradient(to bottom right, rgba(255,182,193,0.3), rgba(173,216,230,0.3))',
+};
+const headerStyle = {
+  padding: '0.5rem 1rem',
+  background: 'white',
+  boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+};
+const headerInnerStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+};
+const titleStyle = {
+  fontSize: '1.75rem',
+  fontWeight: 700,
+  background: 'linear-gradient(to right, #7C3AED, #EC4899)',
+  WebkitBackgroundClip: 'text',
+  color: 'transparent',
+};
+const controlsStyle = {
+  display: 'flex',
+  gap: '0.75rem',
+};
+const iconStyle = { width: 20, height: 20 };
+const uploadButtonStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 6,
+  padding: '6px 12px',
+  backgroundColor: 'white',
+  border: '1px solid #A78BFA',
+  borderRadius: 9999,
+  color: '#7C3AED',
+  cursor: 'pointer',
+};
+const downloadButtonStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 6,
+  padding: '6px 12px',
+  backgroundColor: '#3B82F6',
+  border: 'none',
+  borderRadius: 9999,
+  color: 'white',
+  cursor: 'pointer',
+};
+const moodSelectorStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 6,
+  padding: '6px 12px',
+  backgroundColor: '#8B5CF6',
+  border: 'none',
+  borderRadius: 9999,
+  color: 'white',
+  cursor: 'pointer',
+};
+const backButtonStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 6,
+  padding: '6px 12px',
+  backgroundColor: '#6B7280',
+  border: 'none',
+  borderRadius: 9999,
+  color: 'white',
+  cursor: 'pointer',
+};
+const signOutStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 6,
+  padding: '6px 12px',
+  backgroundColor: '#EC4899',
+  border: 'none',
+  borderRadius: 9999,
+  color: 'white',
+  cursor: 'pointer',
+};
+const mainStyle = { flex: 1, overflow: 'auto', padding: '1rem' };
+const loadingStyle = {
+  fontSize: '1.25rem',
+  color: '#7C3AED',
+  textAlign: 'center',
+  marginTop: 40,
+};
+const tableContainerStyle = { width: '100%', overflowX: 'auto' };
+const tableStyle = { width: '100%', borderCollapse: 'collapse' };
+const theadStyle = {
+  background: 'linear-gradient(to right, #EDE9FE, #FCE7F3)',
+  position: 'sticky',
+  top: 0,
+};
+const thStyle = {
+  padding: '8px 12px',
+  textAlign: 'left',
+  fontSize: '0.75rem',
+  fontWeight: 600,
+  color: '#7C3AED',
+  textTransform: 'uppercase',
+  borderBottom: '1px solid #D1D5DB',
+};
+const tdStyle = {
+  padding: '8px 12px',
+  fontSize: '0.875rem',
+  color: '#4B5563',
+  borderBottom: '1px solid #E5E7EB',
+};
+const inputStyle = {
+  width: '100%',
+  padding: 4,
+  fontSize: '0.875rem',
+  border: '1px solid #D1D5DB',
+  borderRadius: 4,
+};
