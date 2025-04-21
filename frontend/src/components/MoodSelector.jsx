@@ -155,7 +155,7 @@ export default function MoodSelector({ user }: { user: User }) {
   );
 }
 
-// Styles (unchanged)
+// Styles
 const pickerContainer = {
   display: 'flex',
   flexDirection: 'column',
