@@ -1,3 +1,4 @@
+```jsx
 // src/components/AdminDashboard.jsx
 import React, { useEffect, useState } from 'react';
 import {
@@ -10,9 +11,11 @@ import {
   doc,
   setDoc,
   updateDoc,
+  deleteDoc,
+  collectionGroup,
 } from 'firebase/firestore';
 import { getAuth, signOut } from 'firebase/auth';
-import { Upload, LogOut, Smile, ArrowLeft, Edit2, Check, X } from 'lucide-react';
+import { Upload, LogOut, Smile, ArrowLeft, Edit2, Check, X, Trash2 } from 'lucide-react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import Papa from 'papaparse';
 
@@ -181,6 +184,32 @@ export default function AdminDashboard({ user }) {
     }
   };
 
+  const deleteStudent = async id => {
+    if (!window.confirm('Are you sure you want to delete this student? This cannot be undone.')) {
+      return;
+    }
+    try {
+      // Delete moods subcollection
+      const moodsSnap = await getDocs(
+        collection(db, 'schools', user.school, 'students', id, 'moods')
+      );
+      const deleteMoodsPromises = moodsSnap.docs.map(moodDoc =>
+        deleteDoc(moodDoc.ref)
+      );
+      await Promise.all(deleteMoodsPromises);
+
+      // Delete student document
+      await deleteDoc(doc(db, 'schools', user.school, 'students', id));
+
+      // Update local state
+      setStudents(prev => prev.filter(student => student.id !== id));
+      alert('Student deleted successfully.');
+    } catch (err) {
+      console.error('Error deleting student:', err);
+      alert('Failed to delete student. Please try again.');
+    }
+  };
+
   const cancelEdit = () => setEditingId(null);
 
   return (
@@ -322,7 +351,10 @@ export default function AdminDashboard({ user }) {
                             <button onClick={cancelEdit}><X style={{ width: 16, height: 16 }} /></button>
                           </>
                         ) : (
-                          <button onClick={() => startEditing(s)}><Edit2 style={{ width: 16, height: 16 }} /></button>
+                          <>
+                            <button onClick={() => startEditing(s)}><Edit2 style={{ width: 16, height: 16 }} /></button>
+                            <button onClick={() => deleteStudent(s.id)}><Trash2 style={{ width: 16, height: 16 }} /></button>
+                          </>
                         )}
                       </td>
                     </tr>
