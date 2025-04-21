@@ -243,22 +243,7 @@ export default function AdminDashboard({ user }) {
 }
 
 // Add search styles
-const searchContainerStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: 8,
-  padding: '0.5rem 1rem',
-  backgroundColor: '#f3f4f6',
-};
-
-const searchInputStyle = {
-  flex: 1,
-  padding: '6px 12px',
-  fontSize: '1rem',
-  border: '1px solid #d1d5db',
-  borderRadius: 8,
-};
-
+// — Styles —
 const containerStyle = {
   width: '100vw',
   height: '100vh',
@@ -291,6 +276,11 @@ const titleStyle = {
 const controlsStyle = {
   display: 'flex',
   gap: '0.75rem',
+};
+
+const iconStyle = {
+  width: 20,
+  height: 20,
 };
 
 const uploadButtonStyle = {
@@ -353,9 +343,54 @@ const signOutStyle = {
   cursor: 'pointer',
 };
 
-const iconStyle = {
-  width: 20,
-  height: 20,
+const mainStyle = {
+  flex: 1,
+  overflow: 'auto',
+  padding: '1rem',
 };
 
+const loadingStyle = {
+  fontSize: '1.25rem',
+  color: '#7C3AED',
+  textAlign: 'center',
+  marginTop: 40,
+};
 
+const tableContainerStyle = {
+  width: '100%',
+  overflowX: 'auto',
+};
+
+const tableStyle = {
+  width: '100%',
+  borderCollapse: 'collapse',
+};
+
+const theadStyle = {
+  background: 'linear-gradient(to right, #EDE9FE, #FCE7F3)',
+  position: 'sticky',
+  top: 0,
+};
+
+const thStyle = {
+  padding: '8px 12px',
+  textAlign: 'left',
+  fontSize: '0.75rem',
+  fontWeight: 600,
+  color: '#7C3AED',
+  textTransform: 'uppercase',
+  borderBottom: '1px solid #D1D5DB',
+};
+
+const tdStyle = {
+  padding: '8px 12px',
+  fontSize: '0.875rem',
+  color: '#4B5563',
+  borderBottom: '1px solid #E5E7EB',
+};
+
+const inputStyle = {
+  width: '100%',
+  padding: 4,
+  fontSize: '0.875rem',
+  border: '1px solid
