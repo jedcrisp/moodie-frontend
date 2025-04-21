@@ -353,4 +353,9 @@ const signOutStyle = {
   cursor: 'pointer',
 };
 
+const iconStyle = {
+  width: 20,
+  height: 20,
+};
+
 
