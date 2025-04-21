@@ -196,15 +196,15 @@ export default function AdminDashboard({ user }) {
           </div>
         </div>
         <div style={searchContainerStyle}>
-          <Search style={{ width: 18, height: 18 }} />
-          <input
-            type="text"
-            placeholder="Search by name, ID, or notes…"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            style={searchInputStyle}
-          />
-        </div>
+            <span style={searchIconStyle}>🔍</span>
+              <input
+                type="text"
+                placeholder="Search by name, ID, or notes…"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={searchInputStyle}
+                />
+              </div>
       </header>
 
       {onMoodSelector ? <Outlet /> : (
@@ -399,10 +399,15 @@ const inputStyle = {
 
 const searchContainerStyle = {
   display: 'flex',
-  justifyContent: 'space-between',
   alignItems: 'center',
-  marginBottom: '1rem',
-  padding: '0 1rem',
+  gap: '0.5rem',
+  padding: '0.5rem 1rem',
+  marginTop: '1rem',
+};
+
+const searchIconStyle = {
+  fontSize: '1.25rem',
+  color: '#4B5563',
 };
 
 const searchInputStyle = {
@@ -413,5 +418,6 @@ const searchInputStyle = {
   width: '100%',
   maxWidth: '300px',
 };
+
 
 
