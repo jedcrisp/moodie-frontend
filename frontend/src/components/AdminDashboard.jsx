@@ -70,7 +70,7 @@ export default function AdminDashboard({ user }) {
 
   useEffect(() => {
     if (user?.school) fetchStudents();
-  }, [db, user]);
+  }, [db, user]); // Removed duplicate closing
 
   // handlers
   const handleSignOut = async () => {
@@ -108,7 +108,7 @@ export default function AdminDashboard({ user }) {
       'Student ID': s.studentId,
       Grade: s.grade,
       Birthday: s.birthday,
-      'Last 5 Moods': s.moods.map(m => m.emoji).join(' '),
+      'Last 5 Moods': s.moods.map(m => m.emoji).join(' '),
       'Average Mood': s.averageMood != null ? s.averageMood.toFixed(2) : '',
       Notes: s.notes || '',
     }));
@@ -198,7 +198,7 @@ export default function AdminDashboard({ user }) {
               <table style={tableStyle}>
                 <thead style={theadStyle}>
                   <tr>
-                    {[ 'Name','Student ID','Grade','Birthday','Last 5 Moods','Average Mood','Notes','Actions' ].map(h => (
+                    {['Name', 'Student ID', 'Grade', 'Birthday', 'Last 5 Moods', 'Average Mood', 'Notes', 'Actions'].map(h => (
                       <th key={h} style={thStyle}>{h}</th>
                     ))}
                   </tr>
@@ -262,7 +262,7 @@ export default function AdminDashboard({ user }) {
                         )}
                       </td>
                       <td style={{ ...tdStyle, fontSize: '1.5rem' }}>
-                        {s.moods.length > 0 ? s.moods.map((m,i) => <span key={i}>{m.emoji}</span>) : '—'}
+                        {s.moods.length > 0 ? s.moods.map((m, i) => <span key={i}>{m.emoji}</span>) : '—'}
                       </td>
                       <td style={tdStyle}>
                         {s.averageMood != null ? s.averageMood.toFixed(2) : '—'}
@@ -281,11 +281,11 @@ export default function AdminDashboard({ user }) {
                       <td style={tdStyle}>
                         {editingId === s.id ? (
                           <>
-                            <button onClick={() => saveRow(s.id)}><Check style={{ width:16,height:16 }} /></button>
-                            <button onClick={cancelEdit}><X style={{ width:16,height:16 }} /></button>
+                            <button onClick={() => saveRow(s.id)}><Check style={{ width: 16, height: 16 }} /></button>
+                            <button onClick={cancelEdit}><X style={{ width: 16, height: 16 }} /></button>
                           </>
                         ) : (
-                          <button onClick={() => startEditing(s)}><Edit2 style={{ width:16,height:16 }} /></button>
+                          <button onClick={() => startEditing(s)}><Edit2 style={{ width: 16, height: 16 }} /></button>
                         )}
                       </td>
                     </tr>
@@ -339,7 +339,7 @@ const uploadButtonStyle = {
   backgroundColor: 'white',
   border: '1px solid #A78BFA',
   borderRadius: 9999,
-  color: '#7C3AED',
+  color: ' #7C3AED',
   cursor: 'pointer',
 };
 const downloadButtonStyle = {
