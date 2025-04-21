@@ -71,7 +71,6 @@ export default function AdminDashboard({ user }) {
   useEffect(() => {
     if (user?.school) fetchStudents();
   }, [db, user]);
-?.school) fetchStudents();
   }, [db, user]);
 
   // handlers
