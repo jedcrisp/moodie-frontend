@@ -1,3 +1,4 @@
+
 // src/components/AdminDashboard.jsx
 import React, { useEffect, useState } from 'react';
 import {
@@ -275,7 +276,7 @@ const containerStyle = {
 
 const headerStyle = {
   padding: '0.5rem 1rem',
-  background: 'white',
+  background: 'linear-gradient(to right, #ede9fe, #fce7f3)', // soft purple to pink gradient
   boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
 };
 
@@ -422,7 +423,7 @@ const searchContainerStyle = {
   alignItems: 'center',
   gap: '0.5rem',
   padding: '0.5rem 1rem',
-  marginTop: '1rem',
+  marginTop: '-0.5rem',
   justifyContent: 'flex-start',
 };
 
@@ -434,4 +435,3 @@ const searchInputStyle = {
   width: '100%',
   maxWidth: '300px',
 };
-
