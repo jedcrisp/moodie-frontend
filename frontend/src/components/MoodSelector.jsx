@@ -17,17 +17,7 @@ const moods = [
 ];
 
 // Friendly messages
-typedef moodMessages = {
-  Happy: string;
-  Okay: string;
-  Tired: string;
-  Sad: string;
-  Upset: string;
-  Angry: string;
-  Mad: string;
-};
-
-const moodMessages: moodMessages = {
+const moodMessages = {
   Happy: 'Yay! You look happy!',
   Okay: 'Thanks! Hope your day gets better.',
   Tired: 'Rest up and feel better!',
@@ -37,8 +27,7 @@ const moodMessages: moodMessages = {
   Mad: 'I can see you’re mad—take a breath and hang in there!',
 };
 
-// Format to YYYY-MM-DD
-const formatDate = (date: Date) => date.toISOString().split('T')[0];
+// Format to YYYY-MM-DD = (date: Date) => date.toISOString().split('T')[0];
 
 export default function MoodFlow({ user }: { user: { uid: string; school: string } }) {
   const [selectedMood, setSelectedMood] = useState<typeof moods[0] | null>(null);
