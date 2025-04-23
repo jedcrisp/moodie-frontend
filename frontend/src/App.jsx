@@ -1,7 +1,9 @@
+// src/App.jsx
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import MoodSelector from './components/MoodSelector.jsx';
 import AdminDashboard from './components/AdminDashboard.jsx';
+import StudentProfile from './components/StudentProfile.jsx';  // ← new import
 import SignIn from './components/SignIn.jsx';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
@@ -41,7 +43,6 @@ export default function App() {
     return unsub;
   }, [currentSchool]);
 
-  // only redirect if you're truly off your allowed paths
   useEffect(() => {
     if (!loading && user?.school === currentSchool) {
       const p = window.location.pathname;
@@ -85,6 +86,8 @@ export default function App() {
       {user?.role === 'counselor' && (
         <Route path="/admin/*" element={<AdminDashboard user={user} />}>
           <Route index element={<div className="p-6">Welcome, {user.name}</div>} />
+
+          {/* allow counselors to take attendance themselves too */}
           <Route
             path="mood-selector"
             element={
@@ -93,6 +96,13 @@ export default function App() {
               </div>
             }
           />
+
+          {/* ← New student-profile route */}
+          <Route
+            path="students/:id"
+            element={<StudentProfile user={user} />}
+          />
+
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </Route>
       )}
