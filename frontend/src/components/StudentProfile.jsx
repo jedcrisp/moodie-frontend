@@ -1,18 +1,18 @@
 // src/components/StudentProfile.jsx
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
 import {
   getFirestore,
   doc,
   getDoc,
   collection,
-  getDocs,
   query,
   orderBy,
   limit,
-  updateDoc
+  getDocs,
+  updateDoc,
 } from 'firebase/firestore';
-import { ArrowLeft, Edit2, Check, X } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { db } from './firebase';
 
 export default function StudentProfile({ user }) {
@@ -21,146 +21,272 @@ export default function StudentProfile({ user }) {
   const [student, setStudent] = useState(null);
   const [moods, setMoods] = useState([]);
   const [editing, setEditing] = useState(false);
-  const [tempNotes, setTempNotes] = useState('');
+  const [form, setForm] = useState({ grade: '', birthday: '', teacher: '', notes: '' });
 
+  // Fetch student data
   useEffect(() => {
-    async function loadData() {
-      try {
-        const studentRef = doc(db, 'schools', user.school, 'students', id);
-        const studentSnap = await getDoc(studentRef);
-        if (studentSnap.exists()) {
-          const data = { id: studentSnap.id, ...studentSnap.data() };
-          setStudent(data);
-          setTempNotes(data.notes || '');
-        }
-        const moodsSnap = await getDocs(
-          query(
-            collection(db, 'schools', user.school, 'students', id, 'moods'),
-            orderBy('date', 'desc'),
-            limit(10)
-          )
-        );
-        setMoods(moodsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-      } catch (err) {
-        console.error('Error loading student profile:', err);
+    async function load() {
+      const ref = doc(db, 'schools', user.school, 'students', id);
+      const snap = await getDoc(ref);
+      if (snap.exists()) {
+        const data = snap.data();
+        setStudent(data);
+        setForm({
+          grade: data.grade || '',
+          birthday: data.birthday || '',
+          teacher: data.teacher || '',
+          notes: data.notes || '',
+        });
       }
+      // load moods
+      const moodsSnap = await getDocs(
+        query(
+          collection(db, 'schools', user.school, 'students', id, 'moods'),
+          orderBy('date', 'desc'),
+          limit(10)
+        )
+      );
+      setMoods(moodsSnap.docs.map(d => d.data()));
     }
-    loadData();
-  }, [id, user.school]);
+    load();
+  }, [db, user, id]);
 
-  const saveNotes = async () => {
-    try {
-      const studentRef = doc(db, 'schools', user.school, 'students', id);
-      await updateDoc(studentRef, { notes: tempNotes });
-      setStudent(prev => ({ ...prev, notes: tempNotes }));
-      setEditing(false);
-    } catch (err) {
-      console.error('Error saving notes:', err);
-      alert('Failed to save notes.');
-    }
+  const handleChange = e => {
+    const { name, value } = e.target;
+    setForm(prev => ({ ...prev, [name]: value }));
   };
 
-  if (!student) {
-    return <div style={loadingStyle}>Loading student profile…</div>;
-  }
+  const handleSave = async () => {
+    const ref = doc(db, 'schools', user.school, 'students', id);
+    await updateDoc(ref, form);
+    setStudent(prev => ({ ...prev, ...form }));
+    setEditing(false);
+  };
+
+  if (!student) return <div>Loading…</div>;
 
   return (
-    <div style={pageContainer}>
-      <button onClick={() => navigate(-1)} style={backButtonStyle}>
-        <ArrowLeft /> Back
+    <div style={styles.container}>
+      <button style={styles.back} onClick={() => navigate(-1)}>
+        <ArrowLeft size={20} /> Back
       </button>
-      <div style={cardStyle}>
-        <h1 style={nameStyle}>{student.name}</h1>
-        <div style={infoGrid}>
-          <div style={infoItem}>
-            <span style={infoLabel}>Student ID:</span>
-            <span style={infoValue}>{student.studentId}</span>
+      <div style={styles.card}>
+        <h1 style={styles.name}>{student.name}</h1>
+        <div style={styles.grid}>
+          <div style={styles.field}>
+            <label style={styles.label}>Student ID</label>
+            <div style={styles.value}>{student.studentId}</div>
           </div>
-          <div style={infoItem}>
-            <span style={infoLabel}>Grade:</span>
-            <span style={infoValue}>{student.grade}</span>
-          </div>
-          <div style={infoItem}>
-            <span style={infoLabel}>Birthday:</span>
-            <span style={infoValue}>{student.birthday}</span>
-          </div>
-        </div>
-        <div style={notesBox}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h2 style={notesHeader}>Notes</h2>
+          <div style={styles.field}>
+            <label style={styles.label}>Grade</label>
             {editing ? (
-              <div>
-                <button onClick={saveNotes} style={iconButtonStyle}><Check /></button>
-                <button onClick={() => { setEditing(false); setTempNotes(student.notes || ''); }} style={iconButtonStyle}><X /></button>
-              </div>
+              <input
+                style={styles.input}
+                name="grade"
+                value={form.grade}
+                onChange={handleChange}
+              />
             ) : (
-              <button onClick={() => setEditing(true)} style={iconButtonStyle}><Edit2 /></button>
+              <div style={styles.value}>{student.grade}</div>
             )}
           </div>
+          <div style={styles.field}>
+            <label style={styles.label}>Birthday</label>
+            {editing ? (
+              <input
+                type="date"
+                style={styles.input}
+                name="birthday"
+                value={form.birthday}
+                onChange={handleChange}
+              />
+            ) : (
+              <div style={styles.value}>{student.birthday || '—'}</div>
+            )}
+          </div>
+          <div style={styles.field}>
+            <label style={styles.label}>Homeroom Teacher</label>
+            {editing ? (
+              <input
+                style={styles.input}
+                name="teacher"
+                value={form.teacher}
+                onChange={handleChange}
+                placeholder="Enter name"
+              />
+            ) : (
+              <div style={styles.value}>{student.teacher || '—'}</div>
+            )}
+          </div>
+        </div>
+
+        <div style={styles.field}>  
+          <label style={styles.label}>Notes</label>
+          <div style={styles.notesBox}>
+            {editing ? (
+              <textarea
+                name="notes"
+                style={styles.textArea}
+                value={form.notes}
+                onChange={handleChange}
+                placeholder="Add your notes..."
+              />
+            ) : (
+              <div style={styles.value}>{student.notes || '—'}</div>
+            )}
+          </div>
+        </div>
+
+        <div style={styles.actions}>
           {editing ? (
-            <textarea
-              style={notesTextarea}
-              value={tempNotes}
-              onChange={e => setTempNotes(e.target.value)}
-            />
+            <>
+              <button style={styles.cancel} onClick={() => setEditing(false)}>
+                Cancel
+              </button>
+              <button style={styles.save} onClick={handleSave}>
+                Save Changes
+              </button>
+            </>
           ) : (
-            <p style={notesContent}>{student.notes || '—'}</p>
+            <button style={styles.edit} onClick={() => setEditing(true)}>
+              Edit Profile
+            </button>
           )}
         </div>
-        <div style={moodsSection}>
-          <h2 style={sectionHeader}>Recent Moods</h2>
-          <div style={moodsContainer}>
-            {moods.length > 0 ? (
-              moods.map(m => (
-                <div key={m.id} style={moodItem}>{m.emoji}</div>
-              ))
-            ) : (
-              <p style={emptyText}>No moods recorded.</p>
-            )}
-          </div>
+
+        <h2 style={styles.section}>Recent Moods</h2>
+        <div style={styles.moodList}>
+          {moods.length > 0 ? (
+            moods.map((m, i) => (
+              <span key={i} style={styles.mood}>{m.emoji}</span>
+            ))
+          ) : (
+            <div style={styles.value}>—</div>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-// — Styles —
-const pageContainer = {
-  maxWidth: 800,
-  margin: '2rem auto',
-  padding: '0 1rem'
+const styles = {
+  container: {
+    padding: '2rem',
+    background: 'linear-gradient(to bottom right, #fff, #f0f4f8)',
+    minHeight: '100vh',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+  },
+  back: {
+    marginBottom: '1rem',
+    background: 'none',
+    border: 'none',
+    color: '#4B5563',
+    fontSize: '1rem',
+    display: 'flex',
+    alignItems: 'center',
+    cursor: 'pointer',
+  },
+  card: {
+    background: 'white',
+    borderRadius: '0.5rem',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+    padding: '2rem',
+    width: '100%',
+    maxWidth: '600px',
+  },
+  name: {
+    fontSize: '2rem',
+    marginBottom: '1rem',
+    color: '#1F2937',
+  },
+  grid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '1rem',
+    marginBottom: '1.5rem',
+  },
+  field: {
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  label: {
+    fontSize: '0.875rem',
+    fontWeight: 600,
+    color: '#4B5563',
+    marginBottom: '0.5rem',
+  },
+  value: {
+    fontSize: '1rem',
+    color: '#1F2937',
+  },
+  input: {
+    padding: '0.5rem',
+    border: '1px solid #CBD5E0',
+    borderRadius: '0.375rem',
+    fontSize: '1rem',
+    outline: 'none',
+  },
+  notesBox: {
+    background: '#F9FAFB',
+    border: '1px solid #E5E7EB',
+    borderRadius: '0.375rem',
+    padding: '0.75rem',
+    minHeight: '4rem',
+  },
+  textArea: {
+    width: '100%',
+    height: '100%',
+    border: 'none',
+    outline: 'none',
+    resize: 'vertical',
+    background: 'transparent',
+    fontSize: '1rem',
+    color: '#1F2937',
+  },
+  actions: {
+    marginTop: '1rem',
+    display: 'flex',
+    gap: '0.5rem',
+  },
+  edit: {
+    background: '#4F46E5',
+    color: 'white',
+    padding: '0.5rem 1rem',
+    border: 'none',
+    borderRadius: '0.375rem',
+    cursor: 'pointer',
+  },
+  cancel: {
+    background: 'none',
+    color: '#6B7280',
+    padding: '0.5rem 1rem',
+    border: '1px solid #D1D5DB',
+    borderRadius: '0.375rem',
+    cursor: 'pointer',
+  },
+  save: {
+    background: '#10B981',
+    color: 'white',
+    padding: '0.5rem 1rem',
+    border: 'none',
+    borderRadius: '0.375rem',
+    cursor: 'pointer',
+  },
+  section: {
+    fontSize: '1.25rem',
+    fontWeight: 600,
+    color: '#1F2937',
+    marginTop: '2rem',
+    marginBottom: '0.5rem',
+  },
+  moodList: {
+    display: 'flex',
+    gap: '0.5rem',
+    flexWrap: 'wrap',
+  },
+  mood: {
+    fontSize: '1.5rem',
+  },
 };
-const backButtonStyle = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: 6,
-  background: 'none',
-  border: 'none',
-  color: '#4B5563',
-  cursor: 'pointer',
-  fontSize: '1rem',
-  marginBottom: '1rem'
-};
-const cardStyle = {
-  background: '#FFFFFF',
-  borderRadius: 8,
-  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-  padding: '2rem'
-};
-const nameStyle = { margin: 0, fontSize: '2rem', fontWeight: 700, color: '#1F2937' };
-const infoGrid = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' };
-const infoItem = { display: 'flex', gap: '0.5rem' };
-const infoLabel = { fontWeight: 600, color: '#4B5563' };
-const infoValue = { color: '#1F2937' };
-const notesBox = { marginTop: '1.5rem', background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: 4, padding: '1rem' };
-const notesHeader = { margin: '0 0 0.5rem', fontSize: '1.25rem', fontWeight: 600, color: '#374151' };
-const notesContent = { margin: 0, color: '#4B5563', whiteSpace: 'pre-wrap' };
-const notesTextarea = { width: '100%', minHeight: 100, padding: '0.5rem', fontSize: '1rem', border: '1px solid #D1D5DB', borderRadius: 4, resize: 'vertical' };
-const iconButtonStyle = { background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', padding: 4, marginLeft: 8 };
-const sectionHeader = { fontSize: '1.5rem', fontWeight: 600, color: '#1F2937', marginTop: '2rem', marginBottom: '1rem' };
-const moodsSection = {};
-const moodsContainer = { display: 'flex', gap: '0.5rem' };
-const moodItem = { fontSize: '2rem' };
-const emptyText = { color: '#9CA3AF' };
-const loadingStyle = { textAlign: 'center', marginTop: '2rem', color: '#6B7280' };
-
