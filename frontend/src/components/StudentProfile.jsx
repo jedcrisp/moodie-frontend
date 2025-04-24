@@ -21,7 +21,7 @@ export default function StudentProfile({ user }) {
   const [student, setStudent] = useState(null);
   const [moods, setMoods] = useState([]);
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ grade: '', birthday: '', teacher: '', notes: '' });
+  const [form, setForm] = useState({ grade: '', birthday: '', teacher: '', notes: '', campus: '' });
 
   // Fetch student data
   useEffect(() => {
@@ -36,9 +36,10 @@ export default function StudentProfile({ user }) {
           birthday: data.birthday || '',
           teacher: data.teacher || '',
           notes: data.notes || '',
+          campus: data.campus || '',
         });
       }
-      // load moods
+      // Load moods
       const moodsSnap = await getDocs(
         query(
           collection(db, 'schools', user.school, 'students', id, 'moods'),
@@ -116,6 +117,20 @@ export default function StudentProfile({ user }) {
               />
             ) : (
               <div style={styles.value}>{student.teacher || '—'}</div>
+            )}
+          </div>
+          <div style={styles.field}>
+            <label style={styles.label}>Campus</label>
+            {editing ? (
+              <input
+                style={styles.input}
+                name="campus"
+                value={form.campus}
+                onChange={handleChange}
+                placeholder="Enter campus"
+              />
+            ) : (
+              <div style={styles.value}>{student.campus || '—'}</div>
             )}
           </div>
         </div>
