@@ -13,6 +13,8 @@ import {
   getDoc,
   serverTimestamp,
   where,
+  updateDoc,
+  arrayUnion,
 } from 'firebase/firestore';
 import { getAuth, signOut } from 'firebase/auth';
 import {
@@ -39,30 +41,43 @@ export default function AdminDashboard({ user }) {
   const [showCounselorModal, setShowCounselorModal] = useState(false);
   const [newCounselorName, setNewCounselorName] = useState('');
   const [newCounselorEmail, setNewCounselorEmail] = useState('');
-  const [newCounselorCampus, setNewCounselorCampus] = useState(user.campuses && user.campuses.length > 0 ? user.campuses[0] : '');
+  const [newCounselorCampus, setNewCounselorCampus] = useState('');
+  const [availableCampuses, setAvailableCampuses] = useState(user.campuses || []);
   const db = getFirestore();
   const navigate = useNavigate();
   const location = useLocation();
   const onMoodSelector = location.pathname.endsWith('/mood-selector');
   const onStudentProfile = location.pathname.includes('/admin/students/');
 
-  // Load school displayName
+  // Load school displayName and campuses
   useEffect(() => {
-    async function fetchSchoolDisplayName() {
+    async function fetchSchoolData() {
       if (!user?.school) return;
-      const snap = await getDoc(doc(db, 'schools', user.school));
+      // Fetch display name
+      const schoolSnap = await getDoc(doc(db, 'schools', user.school));
       setSchoolDisplayName(
-        snap.exists() ? snap.data().displayName || user.school : user.school
+        schoolSnap.exists() ? schoolSnap.data().displayName || user.school : user.school
       );
+      // Fetch campuses
+      const campusesDoc = await getDoc(doc(db, 'schools', user.school, 'campuses', 'list'));
+      if (campusesDoc.exists()) {
+        const campusList = campusesDoc.data().names || [];
+        setAvailableCampuses(campusList);
+      } else {
+        // Initialize with user.campuses if document doesn't exist
+        await setDoc(doc(db, 'schools', user.school, 'campuses', 'list'), {
+          names: user.campuses || [],
+        });
+        setAvailableCampuses(user.campuses || []);
+      }
     }
-    fetchSchoolDisplayName();
+    fetchSchoolData();
   }, [db, user]);
 
   // Load students + last 5 moods for the selected campus
   const fetchStudents = async () => {
     setLoading(true);
     try {
-      // Query students by campus
       const studentsQuery = selectedCampus
         ? query(
             collection(db, 'schools', user.school, 'students'),
@@ -154,7 +169,7 @@ export default function AdminDashboard({ user }) {
                 studentId: row.studentId.trim(),
                 grade: row.grade ? row.grade.trim() : '',
                 birthday: row.birthday ? row.birthday.trim() : '',
-                campus: selectedCampus || 'DefaultCampus', // Assign to selected campus
+                campus: selectedCampus || 'DefaultCampus',
               }
             );
           }
@@ -240,6 +255,19 @@ export default function AdminDashboard({ user }) {
       return;
     }
     try {
+      // Check if the campus exists in availableCampuses; if not, add it
+      if (!availableCampuses.includes(newCounselorCampus)) {
+        const newCampuses = [...availableCampuses, newCounselorCampus];
+        await updateDoc(doc(db, 'schools', user.school, 'campuses', 'list'), {
+          names: arrayUnion(newCounselorCampus),
+        });
+        setAvailableCampuses(newCampuses);
+        // Optionally, update user.campuses to grant access to the new campus
+        await updateDoc(doc(db, 'users', user.uid), {
+          campuses: arrayUnion(newCounselorCampus),
+        });
+      }
+      // Save the counselor
       await setDoc(
         doc(db, 'schools', user.school, 'counselors', newCounselorEmail),
         {
@@ -251,7 +279,7 @@ export default function AdminDashboard({ user }) {
       );
       setNewCounselorName('');
       setNewCounselorEmail('');
-      setNewCounselorCampus(user.campuses && user.campuses.length > 0 ? user.campuses[0] : '');
+      setNewCounselorCampus('');
       setShowCounselorModal(false);
       alert('Counselor added successfully.');
     } catch (err) {
@@ -298,19 +326,13 @@ export default function AdminDashboard({ user }) {
               </div>
               <div style={formGroupStyle}>
                 <label style={labelStyle}>Campus</label>
-                <select
+                <input
+                  type="text"
                   value={newCounselorCampus}
                   onChange={e => setNewCounselorCampus(e.target.value)}
                   style={modalInputStyle}
-                >
-                  {user.campuses && user.campuses.length > 0 ? (
-                    user.campuses.map(campus => (
-                      <option key={campus} value={campus}>{campus}</option>
-                    ))
-                  ) : (
-                    <option value="">No campuses available</option>
-                  )}
-                </select>
+                  placeholder="Enter campus name"
+                />
               </div>
             </div>
             <div style={modalFooterStyle}>
@@ -349,10 +371,16 @@ export default function AdminDashboard({ user }) {
               style={campusSelectorStyle}
             >
               <option value="">All Campuses</option>
-              {user.campuses && user.campuses.length > 0 &&
-                user.campuses.map(campus => (
-                  <option key={campus} value={campus}>{campus}</option>
-                ))}
+              {availableCampuses.map(campus => (
+                <option
+                  key={campus}
+                  value={campus}
+                  disabled={user.campuses && !user.campuses.includes(campus)}
+                >
+                  {campus}
+                  {user.campuses && !user.campuses.includes(campus) ? ' (Restricted)' : ''}
+                </option>
+              ))}
             </select>
           </div>
           {/* Right: controls */}
