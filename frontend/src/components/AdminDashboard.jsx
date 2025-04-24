@@ -1,3 +1,4 @@
+```jsx
 // src/components/AdminDashboard.jsx
 import React, { useEffect, useState } from 'react';
 import {
@@ -64,10 +65,6 @@ export default function AdminDashboard({ user }) {
         const campusList = campusesDoc.data().names || [];
         setAvailableCampuses(campusList);
       } else {
-        // Initialize with user.campuses if document doesn't exist
-        await setDoc(doc(db, 'schools', user.school, 'campuses', 'list'), {
-          names: user.campuses || [],
-        });
         setAvailableCampuses(user.campuses || []);
       }
     }
@@ -255,18 +252,28 @@ export default function AdminDashboard({ user }) {
       return;
     }
     try {
-      // Check if the campus exists in availableCampuses; if not, add it
-      if (!availableCampuses.includes(newCounselorCampus)) {
-        const newCampuses = [...availableCampuses, newCounselorCampus];
-        await updateDoc(doc(db, 'schools', user.school, 'campuses', 'list'), {
-          names: arrayUnion(newCounselorCampus),
-        });
-        setAvailableCampuses(newCampuses);
-        // Optionally, update user.campuses to grant access to the new campus
-        await updateDoc(doc(db, 'users', user.uid), {
-          campuses: arrayUnion(newCounselorCampus),
-        });
+      // Check if the campuses/list document exists; create it if it doesn't
+      const campusesRef = doc(db, 'schools', user.school, 'campuses', 'list');
+      const campusesDoc = await getDoc(campusesRef);
+      if (!campusesDoc.exists()) {
+        await setDoc(campusesRef, { names: [newCounselorCampus] });
+        setAvailableCampuses([newCounselorCampus]);
+      } else {
+        // Update the campuses list if the campus doesn't already exist
+        const currentCampuses = campusesDoc.data().names || [];
+        if (!currentCampuses.includes(newCounselorCampus)) {
+          const newCampuses = [...currentCampuses, newCounselorCampus];
+          await updateDoc(campusesRef, {
+            names: arrayUnion(newCounselorCampus),
+          });
+          setAvailableCampuses(newCampuses);
+          // Optionally, update user.campuses to grant access to the new campus
+          await updateDoc(doc(db, 'users', user.uid), {
+            campuses: arrayUnion(newCounselorCampus),
+          });
+        }
       }
+
       // Save the counselor
       await setDoc(
         doc(db, 'schools', user.school, 'counselors', newCounselorEmail),
@@ -284,7 +291,13 @@ export default function AdminDashboard({ user }) {
       alert('Counselor added successfully.');
     } catch (err) {
       console.error('Error adding counselor:', err);
-      alert('Failed to add counselor. Please try again.');
+      if (err.code === 'permission-denied') {
+        alert('You do not have permission to add counselors. Please contact an administrator.');
+      } else if (err.code === 'not-found') {
+        alert('Failed to update campus list. Please try again.');
+      } else {
+        alert('Failed to add counselor. Please try again.');
+      }
     }
   };
 
@@ -357,6 +370,7 @@ export default function AdminDashboard({ user }) {
           <div style={brandingStyle}>
             <h1 style={titleStyle}>{schoolDisplayName} Dashboard</h1>
             <div style={searchContainerStyle}>
+              <Search style={{ width: 16, height: 16, color: '#4B5563' }} />
               <input
                 type="text"
                 placeholder="Search by name or ID…"
@@ -711,3 +725,4 @@ const addButtonStyle = {
   borderRadius: '4px',
   cursor: 'pointer',
 };
+```
