@@ -401,7 +401,6 @@ export default function AdminDashboard({ user, setUser }) {
           <div style={brandingStyle}>
             <h1 style={titleStyle}>{schoolDisplayName} Dashboard</h1>
             <div style={searchContainerStyle}>
-              <Search style={{ width: 16, height: 16, color: '#4B5563' }} />
               <input
                 type="text"
                 placeholder="Search by name or ID…"
