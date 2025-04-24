@@ -22,6 +22,7 @@ export default function StudentProfile({ user }) {
   const [moods, setMoods] = useState([]);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ grade: '', birthday: '', teacher: '', notes: '', campus: '' });
+  const [campuses, setCampuses] = useState([]);
 
   // Fetch student data
   useEffect(() => {
@@ -51,6 +52,18 @@ export default function StudentProfile({ user }) {
     }
     load();
   }, [db, user, id]);
+
+  // Fetch campuses
+  useEffect(() => {
+    async function fetchCampuses() {
+      const campusesDoc = await getDoc(doc(db, 'schools', user.school, 'campuses', 'list'));
+      if (campusesDoc.exists()) {
+        const campusList = campusesDoc.data().names || [];
+        setCampuses(campusList);
+      }
+    }
+    fetchCampuses();
+  }, [db, user.school]);
 
   const handleChange = e => {
     const { name, value } = e.target;
@@ -122,13 +135,19 @@ export default function StudentProfile({ user }) {
           <div style={styles.field}>
             <label style={styles.label}>Campus</label>
             {editing ? (
-              <input
+              <select
                 style={styles.input}
                 name="campus"
                 value={form.campus}
                 onChange={handleChange}
-                placeholder="Enter campus"
-              />
+              >
+                <option value="">Select a campus</option>
+                {campuses.map(campus => (
+                  <option key={campus} value={campus}>
+                    {campus}
+                  </option>
+                ))}
+              </select>
             ) : (
               <div style={styles.value}>{student.campus || '—'}</div>
             )}
