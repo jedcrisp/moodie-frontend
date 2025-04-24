@@ -301,7 +301,6 @@ export default function AdminDashboard({ user }) {
                       'Birthday',
                       'Last 5 Moods',
                       'Average Mood',
-                      'Notes',
                       'Actions'
                     ].map(h => (
                       <th key={h} style={thStyle}>{h}</th>
@@ -339,19 +338,6 @@ export default function AdminDashboard({ user }) {
                       </td>
                       <td style={tdStyle}>
                         {s.averageMood != null ? s.averageMood.toFixed(2) : '—'}
-                      </td>
-                      <td style={tdStyle}>
-                        {editingId === s.id ? (
-                          <input
-                            style={inputStyle}
-                            value={tempRow.notes}
-                            onChange={e =>
-                              setTempRow(p => ({ ...p, notes: e.target.value }))
-                            }
-                          />
-                        ) : (
-                          s.notes || '—'
-                        )}
                       </td>
                       <td style={tdStyle}>
                         {editingId === s.id ? (
