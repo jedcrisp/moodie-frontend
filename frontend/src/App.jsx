@@ -1,3 +1,4 @@
+
 // src/App.jsx
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
@@ -26,21 +27,37 @@ export default function App() {
       if (u) {
         const userRef = doc(db, 'schools', currentSchool, 'users', u.uid);
         const userDoc = await getDoc(userRef);
+        
+        // Fetch the list of campuses for the school
+        const campusesRef = doc(db, 'schools', currentSchool, 'campuses', 'list');
+        const campusesDoc = await getDoc(campusesRef);
+        const allCampuses = campusesDoc.exists() ? campusesDoc.data().names || [] : [];
+
         if (userDoc.exists()) {
           const userData = userDoc.data();
+          // If the user is a counselor, ensure they have access to all campuses
+          let userCampuses = userData.campuses || [];
+          if (userData.role === 'counselor' && allCampuses.length > 0) {
+            userCampuses = [...new Set([...userCampuses, ...allCampuses])]; // Merge without duplicates
+            await setDoc(userRef, { ...userData, campuses: userCampuses }, { merge: true });
+          }
           setUser({
             uid: u.uid,
             name: u.displayName || 'User',
             role: userData.role || 'student',
             school: currentSchool,
-            campuses: userData.campuses || [], // Include campuses
+            campuses: userCampuses,
           });
         } else {
           // Create the user document if it doesn't exist
           const defaultUserData = {
             role: 'student', // Default role; adjust based on sign-in logic
-            campuses: [], // Initialize campuses array
+            campuses: [], // Initialize with no campuses by default
           };
+          // If the user is a counselor (adjust based on your sign-in logic), grant access to all campuses
+          if (defaultUserData.role === 'counselor') {
+            defaultUserData.campuses = allCampuses;
+          }
           await setDoc(userRef, defaultUserData);
           setUser({
             uid: u.uid,
