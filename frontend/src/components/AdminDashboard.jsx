@@ -1,3 +1,4 @@
+
 // src/components/AdminDashboard.jsx
 import React, { useEffect, useState } from 'react';
 import {
@@ -399,10 +400,10 @@ export default function AdminDashboard({ user }) {
                 <option
                   key={campus}
                   value={campus}
-                  disabled={user.campuses && !user.campuses.includes(campus)}
+                  disabled={user.role !== 'counselor' && user.campuses && !user.campuses.includes(campus)}
                 >
                   {campus}
-                  {user.campuses && !user.campuses.includes(campus) ? ' (Restricted)' : ''}
+                  {user.role !== 'counselor' && user.campuses && !user.campuses.includes(campus) ? ' (Restricted)' : ''}
                 </option>
               ))}
             </select>
