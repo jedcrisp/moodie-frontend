@@ -19,10 +19,6 @@ import {
   LogOut,
   Smile,
   ArrowLeft,
-  Edit2,
-  Check,
-  X,
-  Trash2,
   Search
 } from 'lucide-react';
 import { Link, useNavigate, useLocation, Outlet } from 'react-router-dom';
@@ -271,7 +267,6 @@ export default function AdminDashboard({ user }) {
           </div>
         </div>
         <div style={searchContainerStyle}>
-          <Search style={{ width: 18, height: 18 }} />
           <input
             type="text"
             placeholder="Search by name, ID, or notes…"
@@ -357,13 +352,6 @@ const linkButtonStyle = {
   cursor: 'pointer',
   fontSize: 'inherit'
 };
-const notesBoxStyle = {
-  padding:      '0.5rem',
-  border:       '1px solid #D1D5DB',
-  borderRadius: '0.375rem',
-  background:   'white',
-  minHeight:    '2rem',
-};
 const containerStyle = {
   width: '100vw',
   height: '100vh',
@@ -446,8 +434,8 @@ const searchContainerStyle = {
   display: 'flex',
   alignItems: 'center',
   gap: '0.5rem',
-  padding: '0.5rem 1rem',
-  marginTop: '-0.5rem',
+  padding: '0',
+  marginTop: '0',
   justifyContent: 'flex-start'
 };
 const searchInputStyle = {
