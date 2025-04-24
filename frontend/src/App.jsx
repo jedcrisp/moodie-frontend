@@ -1,4 +1,3 @@
-
 // src/App.jsx
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
@@ -47,12 +46,14 @@ export default function App() {
             role: userData.role || 'student',
             school: currentSchool,
             campuses: userCampuses,
+            leadCounselor: userData.leadCounselor || false, // Add leadCounselor field
           });
         } else {
           // Create the user document if it doesn't exist
           const defaultUserData = {
             role: 'student', // Default role; adjust based on sign-in logic
             campuses: [], // Initialize with no campuses by default
+            leadCounselor: false, // Default to false
           };
           // If the user is a counselor (adjust based on your sign-in logic), grant access to all campuses
           if (defaultUserData.role === 'counselor') {
@@ -65,6 +66,7 @@ export default function App() {
             role: defaultUserData.role,
             school: currentSchool,
             campuses: defaultUserData.campuses,
+            leadCounselor: defaultUserData.leadCounselor,
           });
         }
       } else {
@@ -83,6 +85,8 @@ export default function App() {
       } else {
         if (p !== '/' && p !== '/mood-selector') navigate('/', { replace: true });
       }
+    } else if (!loading && (!user || user.school !== currentSchool)) {
+      navigate('/signin', { replace: true });
     }
   }, [user, loading, currentSchool, navigate]);
 
@@ -116,7 +120,7 @@ export default function App() {
 
       {/* COUNSELOR / ADMIN */}
       {user?.role === 'counselor' && (
-        <Route path="/admin/*" element={<AdminDashboard user={user} />}>
+        <Route path="/admin/*" element={<AdminDashboard user={user} setUser={setUser} />}>
           <Route index element={<div className="p-6">Welcome, {user.name}</div>} />
           <Route
             path="mood-selector"
