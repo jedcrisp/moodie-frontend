@@ -3,10 +3,10 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import MoodSelector from './components/MoodSelector.jsx';
 import AdminDashboard from './components/AdminDashboard.jsx';
-import StudentProfile from './components/StudentProfile.jsx';  // ← new import
+import StudentProfile from './components/StudentProfile.jsx';
 import SignIn from './components/SignIn.jsx';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -24,16 +24,31 @@ export default function App() {
     const auth = getAuth(), db = getFirestore();
     const unsub = onAuthStateChanged(auth, async u => {
       if (u) {
-        const userDoc = await getDoc(doc(db, 'schools', currentSchool, 'users', u.uid));
+        const userRef = doc(db, 'schools', currentSchool, 'users', u.uid);
+        const userDoc = await getDoc(userRef);
         if (userDoc.exists()) {
+          const userData = userDoc.data();
           setUser({
             uid: u.uid,
             name: u.displayName || 'User',
-            role: userDoc.data().role || 'student',
-            school: currentSchool
+            role: userData.role || 'student',
+            school: currentSchool,
+            campuses: userData.campuses || [], // Include campuses
           });
         } else {
-          setUser(null);
+          // Create the user document if it doesn't exist
+          const defaultUserData = {
+            role: 'student', // Default role; adjust based on sign-in logic
+            campuses: [], // Initialize campuses array
+          };
+          await setDoc(userRef, defaultUserData);
+          setUser({
+            uid: u.uid,
+            name: u.displayName || 'User',
+            role: defaultUserData.role,
+            school: currentSchool,
+            campuses: defaultUserData.campuses,
+          });
         }
       } else {
         setUser(null);
@@ -86,8 +101,6 @@ export default function App() {
       {user?.role === 'counselor' && (
         <Route path="/admin/*" element={<AdminDashboard user={user} />}>
           <Route index element={<div className="p-6">Welcome, {user.name}</div>} />
-
-          {/* allow counselors to take attendance themselves too */}
           <Route
             path="mood-selector"
             element={
@@ -96,13 +109,10 @@ export default function App() {
               </div>
             }
           />
-
-          {/* ← New student-profile route */}
           <Route
             path="students/:id"
             element={<StudentProfile user={user} />}
           />
-
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </Route>
       )}
