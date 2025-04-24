@@ -290,7 +290,7 @@ export default function AdminDashboard({ user }) {
           {loading ? (
             <p style={loadingStyle}>Loading student moods…</p>
           ) : (
-            <div style={tableContainerStyle}>
+              <div style={tableContainerStyle}>
               <table style={tableStyle}>
                 <thead style={theadStyle}>
                   <tr>
@@ -300,8 +300,7 @@ export default function AdminDashboard({ user }) {
                       'Grade',
                       'Birthday',
                       'Last 5 Moods',
-                      'Average Mood',
-                      'Actions'
+                      'Average Mood'
                     ].map(h => (
                       <th key={h} style={thStyle}>{h}</th>
                     ))}
@@ -320,14 +319,11 @@ export default function AdminDashboard({ user }) {
                             : '4px solid #22C55E'
                       }}
                     >
-                        <td style={tdStyle}>
-                      <Link
-                          to={`/admin/students/${s.id}`}
-                          style={linkButtonStyle}
-                            >
+                      <td style={tdStyle}>
+                        <Link to={`/admin/students/${s.id}`} style={linkButtonStyle}>
                           {s.name}
-                            </Link>
-                        </td>
+                        </Link>
+                      </td>
                       <td style={tdStyle}>{s.studentId}</td>
                       <td style={tdStyle}>{s.grade}</td>
                       <td style={tdStyle}>{s.birthday}</td>
@@ -338,27 +334,6 @@ export default function AdminDashboard({ user }) {
                       </td>
                       <td style={tdStyle}>
                         {s.averageMood != null ? s.averageMood.toFixed(2) : '—'}
-                      </td>
-                      <td style={tdStyle}>
-                        {editingId === s.id ? (
-                          <>
-                            <button onClick={() => saveRow(s.id)}>
-                              <Check style={{ width: 16, height: 16 }} />
-                            </button>
-                            <button onClick={cancelEdit}>
-                              <X style={{ width: 16, height: 16 }} />
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button onClick={() => startEditing(s)}>
-                              <Edit2 style={{ width: 16, height: 16 }} />
-                            </button>
-                            <button onClick={() => deleteStudent(s.id)}>
-                              <Trash2 style={{ width: 16, height: 16 }} />
-                            </button>
-                          </>
-                        )}
                       </td>
                     </tr>
                   ))}
