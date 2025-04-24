@@ -44,7 +44,6 @@ export default function MoodSelector({ user }) {
         if (userDoc.exists()) {
           setUserRole(userDoc.data().role || 'student');
         } else {
-          console.warn('No user role found, defaulting to student');
           setUserRole('student');
         }
       }
@@ -77,9 +76,7 @@ export default function MoodSelector({ user }) {
           date: today,
           recordedAt: serverTimestamp(),
         });
-        console.log('Mood saved:', selectedMood, 'for', user.uid, 'id:', docId);
       } catch (err) {
-        console.error('Error saving mood:', err);
       }
     };
 
@@ -99,7 +96,6 @@ export default function MoodSelector({ user }) {
     if (selectedMood && counter < 0 && userRole !== 'counselor') {
       signOut(auth)
         .then(() => navigate('/signin'))
-        .catch(console.error);
     }
   }, [counter, selectedMood, navigate, userRole]);
 
@@ -231,3 +227,4 @@ const backButtonStyle = {
   cursor: 'pointer',
   fontSize: '1rem',
 };
+
