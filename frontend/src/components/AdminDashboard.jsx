@@ -1,4 +1,3 @@
-```jsx
 // src/components/AdminDashboard.jsx
 import React, { useEffect, useState } from 'react';
 import {
@@ -267,11 +266,22 @@ export default function AdminDashboard({ user }) {
             names: arrayUnion(newCounselorCampus),
           });
           setAvailableCampuses(newCampuses);
-          // Optionally, update user.campuses to grant access to the new campus
-          await updateDoc(doc(db, 'users', user.uid), {
-            campuses: arrayUnion(newCounselorCampus),
-          });
         }
+      }
+
+      // Update the user's campuses array in schools/{school}/users/{uid}
+      const userRef = doc(db, 'schools', user.school, 'users', user.uid);
+      const userDoc = await getDoc(userRef);
+      if (!userDoc.exists()) {
+        // This should exist since App.jsx requires it, but add this as a fallback
+        await setDoc(userRef, {
+          role: user.role || 'counselor',
+          campuses: [newCounselorCampus],
+        });
+      } else {
+        await updateDoc(userRef, {
+          campuses: arrayUnion(newCounselorCampus),
+        });
       }
 
       // Save the counselor
@@ -294,7 +304,7 @@ export default function AdminDashboard({ user }) {
       if (err.code === 'permission-denied') {
         alert('You do not have permission to add counselors. Please contact an administrator.');
       } else if (err.code === 'not-found') {
-        alert('Failed to update campus list. Please try again.');
+        alert('Failed to update campus list or user data. Please try again.');
       } else {
         alert('Failed to add counselor. Please try again.');
       }
@@ -725,4 +735,3 @@ const addButtonStyle = {
   borderRadius: '4px',
   cursor: 'pointer',
 };
-```
