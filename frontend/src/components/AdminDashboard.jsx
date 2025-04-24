@@ -1,4 +1,3 @@
-
 // src/components/AdminDashboard.jsx
 import React, { useEffect, useState } from 'react';
 import {
@@ -31,7 +30,7 @@ import {
 import { Link, useNavigate, useLocation, Outlet } from 'react-router-dom';
 import Papa from 'papaparse';
 
-export default function AdminDashboard({ user }) {
+export default function AdminDashboard({ user, setUser }) {
   const [students, setStudents] = useState([]);
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -52,75 +51,103 @@ export default function AdminDashboard({ user }) {
 
   // Load school displayName and campuses
   useEffect(() => {
+    let isMounted = true;
     async function fetchSchoolData() {
-      if (!user?.school) return;
-      // Fetch display name
-      const schoolSnap = await getDoc(doc(db, 'schools', user.school));
-      setSchoolDisplayName(
-        schoolSnap.exists() ? schoolSnap.data().displayName || user.school : user.school
-      );
-      // Fetch campuses
-      const campusesDoc = await getDoc(doc(db, 'schools', user.school, 'campuses', 'list'));
-      if (campusesDoc.exists()) {
-        const campusList = campusesDoc.data().names || [];
-        setAvailableCampuses(campusList);
-      } else {
-        setAvailableCampuses(user.campuses || []);
+      if (!user?.school || !isMounted) return;
+      try {
+        // Fetch display name
+        const schoolSnap = await getDoc(doc(db, 'schools', user.school));
+        if (isMounted) {
+          setSchoolDisplayName(
+            schoolSnap.exists() ? schoolSnap.data().displayName || user.school : user.school
+          );
+        }
+        // Fetch campuses
+        const campusesDoc = await getDoc(doc(db, 'schools', user.school, 'campuses', 'list'));
+        if (isMounted) {
+          if (campusesDoc.exists()) {
+            const campusList = campusesDoc.data().names || [];
+            setAvailableCampuses(campusList);
+          } else {
+            setAvailableCampuses(user.campuses || []);
+          }
+        }
+      } catch (err) {
+        if (isMounted) {
+          console.error('Error fetching school data:', err);
+          if (err.code === 'permission-denied') {
+            setUser(null);
+          }
+        }
       }
     }
     fetchSchoolData();
-  }, [db, user]);
+    return () => {
+      isMounted = false;
+    };
+  }, [db, user, setUser]);
 
   // Load students + last 5 moods for the selected campus
-  const fetchStudents = async () => {
-    setLoading(true);
-    try {
-      const studentsQuery = selectedCampus
-        ? query(
-            collection(db, 'schools', user.school, 'students'),
-            where('campus', '==', selectedCampus)
-          )
-        : collection(db, 'schools', user.school, 'students');
-      const snap = await getDocs(studentsQuery);
-      const arr = await Promise.all(
-        snap.docs.map(async ds => {
-          const s = ds.data();
-          const moodsSnap = await getDocs(
-            query(
-              collection(
-                db,
-                'schools',
-                user.school,
-                'students',
-                ds.id,
-                'moods'
-              ),
-              orderBy('date', 'desc'),
-              limit(5)
-            )
-          );
-          const moods = moodsSnap.docs.map(d => d.data());
-          const avg =
-            moods.length > 0
-              ? moods.reduce((sum, m) => sum + (m.score || 3), 0) /
-                moods.length
-              : null;
-          return { id: ds.id, ...s, moods, averageMood: avg };
-        })
-      );
-      arr.sort((a, b) => (a.averageMood ?? 99) - (b.averageMood ?? 99));
-      setStudents(arr);
-      setFilteredStudents(arr);
-    } catch (err) {
-      console.error('Error fetching students:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    if (user?.school) fetchStudents();
-  }, [db, user, selectedCampus]);
+    let isMounted = true;
+    async function fetchStudents() {
+      if (!user?.school || !isMounted) return;
+      setLoading(true);
+      try {
+        const studentsQuery = selectedCampus
+          ? query(
+              collection(db, 'schools', user.school, 'students'),
+              where('campus', '==', selectedCampus)
+            )
+          : collection(db, 'schools', user.school, 'students');
+        const snap = await getDocs(studentsQuery);
+        const arr = await Promise.all(
+          snap.docs.map(async ds => {
+            const s = ds.data();
+            const moodsSnap = await getDocs(
+              query(
+                collection(
+                  db,
+                  'schools',
+                  user.school,
+                  'students',
+                  ds.id,
+                  'moods'
+                ),
+                orderBy('date', 'desc'),
+                limit(5)
+              )
+            );
+            const moods = moodsSnap.docs.map(d => d.data());
+            const avg =
+              moods.length > 0
+                ? moods.reduce((sum, m) => sum + (m.score || 3), 0) /
+                  moods.length
+                : null;
+            return { id: ds.id, ...s, moods, averageMood: avg };
+          })
+        );
+        if (isMounted) {
+          arr.sort((a, b) => (a.averageMood ?? 99) - (b.averageMood ?? 99));
+          setStudents(arr);
+          setFilteredStudents(arr);
+        }
+      } catch (err) {
+        if (isMounted) {
+          console.error('Error fetching students:', err);
+          if (err.code === 'permission-denied') {
+            setUser(null);
+          }
+        }
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+    fetchStudents();
+    return () => {
+      isMounted = false;
+    };
+  }, [db, user, selectedCampus, setUser]);
 
   // Filter students by search query
   useEffect(() => {
@@ -138,9 +165,11 @@ export default function AdminDashboard({ user }) {
   const handleSignOut = async () => {
     try {
       await signOut(getAuth());
+      setUser(null);
       navigate('/signin', { replace: true });
     } catch (err) {
       console.error('Error signing out:', err);
+      navigate('/signin', { replace: true });
     }
   };
 
@@ -170,7 +199,7 @@ export default function AdminDashboard({ user }) {
               }
             );
           }
-          await fetchStudents(); // Refresh student list
+          await fetchStudents();
           alert('CSV uploaded successfully!');
         },
         error: err => {
@@ -220,7 +249,6 @@ export default function AdminDashboard({ user }) {
       return;
     }
     try {
-      // Delete moods subcollection
       const moodsSnap = await getDocs(
         collection(db, 'schools', user.school, 'students', id, 'moods')
       );
@@ -228,11 +256,7 @@ export default function AdminDashboard({ user }) {
         deleteDoc(moodDoc.ref)
       );
       await Promise.all(deleteMoodsPromises);
-
-      // Delete student document
       await deleteDoc(doc(db, 'schools', user.school, 'students', id));
-
-      // Update local state
       setStudents(prev => prev.filter(student => student.id !== id));
       setFilteredStudents(prev => prev.filter(student => student.id !== id));
       alert('Student deleted successfully.');
@@ -252,14 +276,12 @@ export default function AdminDashboard({ user }) {
       return;
     }
     try {
-      // Check if the campuses/list document exists; create it if it doesn't
       const campusesRef = doc(db, 'schools', user.school, 'campuses', 'list');
       const campusesDoc = await getDoc(campusesRef);
       if (!campusesDoc.exists()) {
         await setDoc(campusesRef, { names: [newCounselorCampus] });
         setAvailableCampuses([newCounselorCampus]);
       } else {
-        // Update the campuses list if the campus doesn't already exist
         const currentCampuses = campusesDoc.data().names || [];
         if (!currentCampuses.includes(newCounselorCampus)) {
           const newCampuses = [...currentCampuses, newCounselorCampus];
@@ -270,14 +292,13 @@ export default function AdminDashboard({ user }) {
         }
       }
 
-      // Update the user's campuses array in schools/{school}/users/{uid}
       const userRef = doc(db, 'schools', user.school, 'users', user.uid);
       const userDoc = await getDoc(userRef);
       if (!userDoc.exists()) {
-        // This should exist since App.jsx requires it, but add this as a fallback
         await setDoc(userRef, {
           role: user.role || 'counselor',
           campuses: [newCounselorCampus],
+          leadCounselor: user.leadCounselor || false,
         });
       } else {
         await updateDoc(userRef, {
@@ -285,7 +306,6 @@ export default function AdminDashboard({ user }) {
         });
       }
 
-      // Save the counselor
       await setDoc(
         doc(db, 'schools', user.school, 'counselors', newCounselorEmail),
         {
@@ -303,7 +323,7 @@ export default function AdminDashboard({ user }) {
     } catch (err) {
       console.error('Error adding counselor:', err);
       if (err.code === 'permission-denied') {
-        alert('You do not have permission to add counselors. Please contact an administrator.');
+        alert('You do not have permission to add counselors. Please contact the lead counselor.');
       } else if (err.code === 'not-found') {
         alert('Failed to update campus list or user data. Please try again.');
       } else {
@@ -421,10 +441,12 @@ export default function AdminDashboard({ user }) {
                 disabled={uploading}
               />
             </label>
-            <button style={addCounselorButtonStyle} onClick={() => setShowCounselorModal(true)}>
-              <UserPlus style={iconStyle} />
-              <span>Add Counselor</span>
-            </button>
+            {user.leadCounselor && (
+              <button style={addCounselorButtonStyle} onClick={() => setShowCounselorModal(true)}>
+                <UserPlus style={iconStyle} />
+                <span>Add Counselor</span>
+              </button>
+            )}
             {onMoodSelector || onStudentProfile ? (
               <button style={backButtonStyle} onClick={() => navigate('/admin')}>
                 <ArrowLeft style={iconStyle} />
