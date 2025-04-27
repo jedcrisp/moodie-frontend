@@ -1,4 +1,3 @@
-// src/components/AdminDashboard.jsx
 import React, { useEffect, useState } from 'react';
 import {
   getFirestore,
@@ -37,12 +36,19 @@ export default function AdminDashboard({ user }) {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [schoolDisplayName, setSchoolDisplayName] = useState('');
-  const [selectedCampus, setSelectedCampus] = useState(user.campuses && user.campuses.length > 0 ? user.campuses[0] : '');
+  const [selectedCampus, setSelectedCampus] = useState('');
   const [showCounselorModal, setShowCounselorModal] = useState(false);
+  const [showStudentModal, setShowStudentModal] = useState(false);
   const [newCounselorName, setNewCounselorName] = useState('');
   const [newCounselorEmail, setNewCounselorEmail] = useState('');
   const [newCounselorCampus, setNewCounselorCampus] = useState('');
-  const [availableCampuses, setAvailableCampuses] = useState(user.campuses || []);
+  const [newStudentName, setNewStudentName] = useState('');
+  const [newStudentId, setNewStudentId] = useState('');
+  const [newStudentGrade, setNewStudentGrade] = useState('');
+  const [newStudentBirthday, setNewStudentBirthday] = useState('');
+  const [newStudentEmail, setNewStudentEmail] = useState('');
+  const [newStudentCampus, setNewStudentCampus] = useState('');
+  const [availableCampuses, setAvailableCampuses] = useState([]);
   const db = getFirestore();
   const navigate = useNavigate();
   const location = useLocation();
@@ -52,23 +58,44 @@ export default function AdminDashboard({ user }) {
   // Load school displayName and campuses
   useEffect(() => {
     async function fetchSchoolData() {
-      if (!user?.school) return;
-      // Fetch display name
-      const schoolSnap = await getDoc(doc(db, 'schools', user.school));
-      setSchoolDisplayName(
-        schoolSnap.exists() ? schoolSnap.data().displayName || user.school : user.school
-      );
-      // Fetch campuses
-      const campusesDoc = await getDoc(doc(db, 'schools', user.school, 'campuses', 'list'));
-      if (campusesDoc.exists()) {
-        const campusList = campusesDoc.data().names || [];
+      if (!user?.school) {
+        console.warn('No school defined for user:', user);
+        setAvailableCampuses(['DefaultCampus']);
+        setSchoolDisplayName('Unknown School');
+        setSelectedCampus('DefaultCampus');
+        setNewStudentCampus('DefaultCampus');
+        return;
+      }
+      try {
+        console.log('Fetching school data for school:', user.school);
+        // Fetch display name
+        const schoolSnap = await getDoc(doc(db, 'schools', user.school));
+        setSchoolDisplayName(
+          schoolSnap.exists() ? schoolSnap.data().displayName || user.school : user.school
+        );
+        // Fetch campuses
+        const campusesDoc = await getDoc(doc(db, 'schools', user.school, 'campuses', 'list'));
+        let campusList = ['DefaultCampus']; // Fallback
+        if (campusesDoc.exists() && Array.isArray(campusesDoc.data().names) && campusesDoc.data().names.length > 0) {
+          campusList = campusesDoc.data().names;
+        } else {
+          // Initialize Firestore document with default campus
+          await setDoc(doc(db, 'schools', user.school, 'campuses', 'list'), {
+            names: ['DefaultCampus'],
+          });
+        }
+        console.log('Available campuses from Firestore:', campusList);
         setAvailableCampuses(campusList);
-      } else {
-        // Initialize with user.campuses if document doesn't exist
-        await setDoc(doc(db, 'schools', user.school, 'campuses', 'list'), {
-          names: user.campuses || [],
-        });
-        setAvailableCampuses(user.campuses || []);
+        // Set default selectedCampus and newStudentCampus
+        const defaultCampus = campusList[0] || 'DefaultCampus';
+        setSelectedCampus(defaultCampus);
+        setNewStudentCampus(defaultCampus);
+      } catch (err) {
+        console.error('Error fetching school data:', err);
+        setAvailableCampuses(['DefaultCampus']);
+        setSchoolDisplayName(user?.school || 'Unknown School');
+        setSelectedCampus('DefaultCampus');
+        setNewStudentCampus('DefaultCampus');
       }
     }
     fetchSchoolData();
@@ -169,11 +196,12 @@ export default function AdminDashboard({ user }) {
                 studentId: row.studentId.trim(),
                 grade: row.grade ? row.grade.trim() : '',
                 birthday: row.birthday ? row.birthday.trim() : '',
+                email: row.email ? row.email.trim() : '',
                 campus: selectedCampus || 'DefaultCampus',
               }
             );
           }
-          await fetchStudents(); // Refresh student list
+          await fetchStudents();
           alert('CSV uploaded successfully!');
         },
         error: err => {
@@ -201,6 +229,7 @@ export default function AdminDashboard({ user }) {
       'Student ID': s.studentId,
       Grade: s.grade,
       Birthday: s.birthday,
+      Email: s.email || '',
       'Last 5 Moods': s.moods.map(m => m.emoji).join(' '),
       'Average Mood': s.averageMood != null ? s.averageMood.toFixed(2) : '',
       Campus: s.campus,
@@ -223,7 +252,6 @@ export default function AdminDashboard({ user }) {
       return;
     }
     try {
-      // Delete moods subcollection
       const moodsSnap = await getDocs(
         collection(db, 'schools', user.school, 'students', id, 'moods')
       );
@@ -231,11 +259,7 @@ export default function AdminDashboard({ user }) {
         deleteDoc(moodDoc.ref)
       );
       await Promise.all(deleteMoodsPromises);
-
-      // Delete student document
       await deleteDoc(doc(db, 'schools', user.school, 'students', id));
-
-      // Update local state
       setStudents(prev => prev.filter(student => student.id !== id));
       setFilteredStudents(prev => prev.filter(student => student.id !== id));
       alert('Student deleted successfully.');
@@ -255,19 +279,16 @@ export default function AdminDashboard({ user }) {
       return;
     }
     try {
-      // Check if the campus exists in availableCampuses; if not, add it
       if (!availableCampuses.includes(newCounselorCampus)) {
         const newCampuses = [...availableCampuses, newCounselorCampus];
         await updateDoc(doc(db, 'schools', user.school, 'campuses', 'list'), {
-          names: arrayUnion(newCounselorCampus),
+          names: newCampuses,
         });
         setAvailableCampuses(newCampuses);
-        // Optionally, update user.campuses to grant access to the new campus
         await updateDoc(doc(db, 'users', user.uid), {
           campuses: arrayUnion(newCounselorCampus),
         });
       }
-      // Save the counselor
       await setDoc(
         doc(db, 'schools', user.school, 'counselors', newCounselorEmail),
         {
@@ -288,9 +309,49 @@ export default function AdminDashboard({ user }) {
     }
   };
 
+  const handleAddStudent = async () => {
+    if (!newStudentName || !newStudentId || !newStudentEmail) {
+      alert('Please fill in all required fields: Name, Student ID, and Email.');
+      return;
+    }
+    if (!newStudentCampus) {
+      alert('Please select a campus.');
+      return;
+    }
+    if (!newStudentEmail.includes('@')) {
+      alert('Please enter a valid email address.');
+      return;
+    }
+    try {
+      await setDoc(
+        doc(db, 'schools', user.school, 'students', newStudentId),
+        {
+          name: newStudentName.trim(),
+          studentId: newStudentId.trim(),
+          grade: newStudentGrade ? newStudentGrade.trim() : '',
+          birthday: newStudentBirthday ? newStudentBirthday.trim() : '',
+          email: newStudentEmail.trim(),
+          campus: newStudentCampus,
+          createdAt: serverTimestamp(),
+        }
+      );
+      setNewStudentName('');
+      setNewStudentId('');
+      setNewStudentGrade('');
+      setNewStudentBirthday('');
+      setNewStudentEmail('');
+      setNewStudentCampus(selectedCampus || availableCampuses[0] || 'DefaultCampus');
+      setShowStudentModal(false);
+      await fetchStudents();
+      alert('Student added successfully.');
+    } catch (err) {
+      console.error('Error adding student:', err);
+      alert('Failed to add student. Please try again.');
+    }
+  };
+
   return (
     <div style={containerStyle}>
-      {/* Modal for Adding Counselor */}
       {showCounselorModal && (
         <div style={modalOverlayStyle}>
           <div style={modalStyle}>
@@ -350,14 +411,114 @@ export default function AdminDashboard({ user }) {
         </div>
       )}
 
-      {/* Header */}
+      {showStudentModal && (
+        <div style={modalOverlayStyle}>
+          <div style={modalStyle}>
+            <div style={modalHeaderStyle}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Add Student</h2>
+              <button
+                onClick={() => setShowStudentModal(false)}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
+              >
+                <X style={{ width: 20, height: 20 }} />
+              </button>
+            </div>
+            <div style={modalBodyStyle}>
+              <div style={formGroupStyle}>
+                <label style={labelStyle}>Name *</label>
+                <input
+                  type="text"
+                  value={newStudentName}
+                  onChange={e => setNewStudentName(e.target.value)}
+                  style={modalInputStyle}
+                  placeholder="Enter student name"
+                  required
+                />
+              </div>
+              <div style={formGroupStyle}>
+                <label style={labelStyle}>Student ID *</label>
+                <input
+                  type="text"
+                  value={newStudentId}
+                  onChange={e => setNewStudentId(e.target.value)}
+                  style={modalInputStyle}
+                  placeholder="Enter student ID"
+                  required
+                />
+              </div>
+              <div style={formGroupStyle}>
+                <label style={labelStyle}>Email *</label>
+                <input
+                  type="email"
+                  value={newStudentEmail}
+                  onChange={e => setNewStudentEmail(e.target.value)}
+                  style={modalInputStyle}
+                  placeholder="Enter student email"
+                  required
+                />
+              </div>
+              <div style={formGroupStyle}>
+                <label style={labelStyle}>Grade</label>
+                <input
+                  type="text"
+                  value={newStudentGrade}
+                  onChange={e => setNewStudentGrade(e.target.value)}
+                  style={modalInputStyle}
+                  placeholder="Enter grade (e.g., 9)"
+                />
+              </div>
+              <div style={formGroupStyle}>
+                <label style={labelStyle}>Birthday</label>
+                <input
+                  type="text"
+                  value={newStudentBirthday}
+                  onChange={e => setNewStudentBirthday(e.target.value)}
+                  style={modalInputStyle}
+                  placeholder="Enter birthday (e.g., MM/DD/YYYY)"
+                />
+              </div>
+              <div style={formGroupStyle}>
+                <label style={labelStyle}>Campus *</label>
+                <select
+                  value={newStudentCampus}
+                  onChange={e => setNewStudentCampus(e.target.value)}
+                  style={modalInputStyle}
+                  required
+                >
+                  <option value="">Select a campus</option>
+                  {availableCampuses.map(campus => (
+                    <option key={campus} value={campus}>
+                      {campus}
+                    </option>
+                  ))}
+                </select>
+                {availableCampuses.length === 0 && (
+                  <p style={{ color: '#EF4444', fontSize: '0.75rem', marginTop: '0.25rem' }}>
+                    No campuses available. Please contact support.
+                  </p>
+                )}
+              </div>
+            </div>
+            <div style={modalFooterStyle}>
+              <button
+                onClick={() => setShowStudentModal(false)}
+                style={cancelButtonStyle}
+              >
+                Cancel
+              </button>
+              <button onClick={handleAddStudent} style={addButtonStyle}>
+                Add Student
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <header style={headerStyle}>
         <div style={headerInnerStyle}>
-          {/* Left: title + search + campus selector */}
           <div style={brandingStyle}>
             <h1 style={titleStyle}>{schoolDisplayName} Dashboard</h1>
             <div style={searchContainerStyle}>
-              <Search style={{ width: 16, height: 16, color: '#4B5563' }} />
               <input
                 type="text"
                 placeholder="Search by name or ID…"
@@ -376,15 +537,14 @@ export default function AdminDashboard({ user }) {
                 <option
                   key={campus}
                   value={campus}
-                  disabled={user.campuses && !user.campuses.includes(campus)}
+                  disabled={user?.campuses && !user.campuses.includes(campus)}
                 >
                   {campus}
-                  {user.campuses && !user.campuses.includes(campus) ? ' (Restricted)' : ''}
+                  {user?.campuses && !user.campuses.includes(campus) ? ' (Restricted)' : ''}
                 </option>
               ))}
             </select>
           </div>
-          {/* Right: controls */}
           <div style={controlsStyle}>
             <label style={uploadButtonStyle}>
               <Upload style={iconStyle} />
@@ -400,6 +560,10 @@ export default function AdminDashboard({ user }) {
             <button style={addCounselorButtonStyle} onClick={() => setShowCounselorModal(true)}>
               <UserPlus style={iconStyle} />
               <span>Add Counselor</span>
+            </button>
+            <button style={addStudentButtonStyle} onClick={() => setShowStudentModal(true)}>
+              <UserPlus style={iconStyle} />
+              <span>Add Student</span>
             </button>
             {onMoodSelector || onStudentProfile ? (
               <button style={backButtonStyle} onClick={() => navigate('/admin')}>
@@ -423,12 +587,10 @@ export default function AdminDashboard({ user }) {
         </div>
       </header>
 
-      {/* Content or Nested */}
       {onMoodSelector || onStudentProfile ? (
         <Outlet />
       ) : (
         <main style={mainStyle}>
-          {/* Student Table */}
           {loading ? (
             <p style={loadingStyle}>Loading student moods…</p>
           ) : (
@@ -436,7 +598,7 @@ export default function AdminDashboard({ user }) {
               <table style={tableStyle}>
                 <thead style={theadStyle}>
                   <tr>
-                    {['Name', 'Student ID', 'Grade', 'Birthday', 'Campus', 'Last 5 Moods', 'Average Mood', 'DELETE'].map(h => (
+                    {['Name', 'Student ID', 'Grade', 'Birthday', 'Last 5 Moods', 'Average Mood', 'DELETE'].map(h => (
                       <th key={h} style={thStyle}>{h}</th>
                     ))}
                   </tr>
@@ -462,7 +624,6 @@ export default function AdminDashboard({ user }) {
                       <td style={tdStyle}>{s.studentId}</td>
                       <td style={tdStyle}>{s.grade}</td>
                       <td style={tdStyle}>{s.birthday}</td>
-                      <td style={tdStyle}>{s.campus || '—'}</td>
                       <td style={{ ...tdStyle, fontSize: '1.5rem' }}>
                         {s.moods.length > 0 ? s.moods.map((m, i) => <span key={i}>{m.emoji}</span>) : '—'}
                       </td>
@@ -533,6 +694,17 @@ const uploadButtonStyle = {
   cursor: 'pointer',
 };
 const addCounselorButtonStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 6,
+  padding: '6px 12px',
+  backgroundColor: '#EC4899',
+  border: 'none',
+  borderRadius: 9999,
+  color: 'white',
+  cursor: 'pointer',
+};
+const addStudentButtonStyle = {
   display: 'flex',
   alignItems: 'center',
   gap: 6,
@@ -643,7 +815,6 @@ const deleteButtonStyle = {
   border: 'none',
   cursor: 'pointer',
 };
-// Modal styles
 const modalOverlayStyle = {
   position: 'fixed',
   top: 0,
