@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   getFirestore,
   collection,
@@ -54,6 +54,40 @@ export default function AdminDashboard({ user }) {
   const location = useLocation();
   const onMoodSelector = location.pathname.endsWith('/mood-selector');
   const onStudentProfile = location.pathname.includes('/admin/students/');
+
+  // Auto-logout timer
+  const timeoutRef = useRef(null);
+  const TIMEOUT_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
+
+  const resetTimeout = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    timeoutRef.current = setTimeout(() => {
+      handleSignOut();
+    }, TIMEOUT_DURATION);
+  };
+
+  const handleActivity = () => {
+    resetTimeout();
+  };
+
+  useEffect(() => {
+    // Set up event listeners for user activity
+    const events = ['mousemove', 'click', 'keypress', 'touchstart', 'scroll'];
+    events.forEach(event => window.addEventListener(event, handleActivity));
+
+    // Start the initial timer
+    resetTimeout();
+
+    // Clean up on unmount
+    return () => {
+      events.forEach(event => window.removeEventListener(event, handleActivity));
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []); // Empty dependency array ensures this runs once on mount
 
   // Load school displayName and campuses
   useEffect(() => {
@@ -557,9 +591,6 @@ export default function AdminDashboard({ user }) {
                 disabled={uploading}
               />
             </label>
-            <button style={downloadButtonStyle} onClick={handleDownloadCsv}>
-              <span>Download CSV</span>
-            </button>
             <button style={addCounselorButtonStyle} onClick={() => setShowCounselorModal(true)}>
               <UserPlus style={iconStyle} />
               <span>Add Counselor</span>
@@ -568,12 +599,20 @@ export default function AdminDashboard({ user }) {
               <UserPlus style={iconStyle} />
               <span>Add Student</span>
             </button>
-            {onMoodSelector || onStudentProfile ? (
+            {onMoodSelector ? (
+              <button style={backButtonStyle} onClick={() => navigate('/admin')}>
+                <ArrowLeft style={iconStyle} />
+                <span>Back</span>
+              </button>
+            ) : !onStudentProfile ? (
               <button style={moodSelectorStyle} onClick={handleMoodSelectorRedirect}>
                 <Smile style={iconStyle} />
                 <span>Mood Selector</span>
               </button>
             ) : null}
+            <button style={downloadButtonStyle} onClick={handleDownloadCsv}>
+              <span>Download CSV</span>
+            </button>
             <button style={signOutStyle} onClick={handleSignOut}>
               <LogOut style={iconStyle} />
               <span>Sign Out</span>
@@ -627,7 +666,7 @@ export default function AdminDashboard({ user }) {
                       </td>
                       <td style={tdStyle}>
                         <button onClick={() => deleteStudent(s.id)} style={deleteButtonStyle}>
-                          <Trash2 style={{ width: 16, height: 16 }} />
+                          <Trash2 style={iconStyle} />
                         </button>
                       </td>
                     </tr>
@@ -748,7 +787,7 @@ const signOutStyle = {
   alignItems: 'center',
   gap: 6,
   padding: '6px 12px',
-  backgroundColor: '#EC4899',
+  backgroundColor: '#9CA3AF',
   border: 'none',
   borderRadius: 9999,
   color: 'white',
