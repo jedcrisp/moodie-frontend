@@ -557,6 +557,9 @@ export default function AdminDashboard({ user }) {
                 disabled={uploading}
               />
             </label>
+            <button style={downloadButtonStyle} onClick={handleDownloadCsv}>
+              <span>Download CSV</span>
+            </button>
             <button style={addCounselorButtonStyle} onClick={() => setShowCounselorModal(true)}>
               <UserPlus style={iconStyle} />
               <span>Add Counselor</span>
@@ -576,9 +579,6 @@ export default function AdminDashboard({ user }) {
                 <span>Mood Selector</span>
               </button>
             )}
-            <button style={downloadButtonStyle} onClick={handleDownloadCsv}>
-              <span>Download CSV</span>
-            </button>
             <button style={signOutStyle} onClick={handleSignOut}>
               <LogOut style={iconStyle} />
               <span>Sign Out</span>
