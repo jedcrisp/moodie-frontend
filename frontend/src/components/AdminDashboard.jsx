@@ -569,16 +569,11 @@ export default function AdminDashboard({ user }) {
               <span>Add Student</span>
             </button>
             {onMoodSelector || onStudentProfile ? (
-              <button style={backButtonStyle} onClick={() => navigate('/admin')}>
-                <ArrowLeft style={iconStyle} />
-                <span>Back</span>
-              </button>
-            ) : (
               <button style={moodSelectorStyle} onClick={handleMoodSelectorRedirect}>
                 <Smile style={iconStyle} />
                 <span>Mood Selector</span>
               </button>
-            )}
+            ) : null}
             <button style={signOutStyle} onClick={handleSignOut}>
               <LogOut style={iconStyle} />
               <span>Sign Out</span>
