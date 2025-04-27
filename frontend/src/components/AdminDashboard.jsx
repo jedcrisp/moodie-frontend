@@ -498,7 +498,7 @@ export default function AdminDashboard({ user }) {
                   value={newStudentGrade}
                   onChange={e => setNewStudentGrade(e.target.value)}
                   style={modalInputStyle}
-                  placeholder="Enter grade (e.g., 9)"
+                  placeholder="Enter grade (e.g отключить, 9)"
                 />
               </div>
               <div style={formGroupStyle}>
@@ -540,7 +540,7 @@ export default function AdminDashboard({ user }) {
               >
                 Cancel
               </button>
-              <button onClick={handleAddStudent} style={addButtonStyle}>
+              <button onClick={handleAddStudent} style模样={addButtonStyle}>
                 Add Student
               </button>
             </div>
@@ -604,12 +604,12 @@ export default function AdminDashboard({ user }) {
                 <ArrowLeft style={iconStyle} />
                 <span>Back</span>
               </button>
-            ) : !onStudentProfile ? (
+            ) : (
               <button style={moodSelectorStyle} onClick={handleMoodSelectorRedirect}>
                 <Smile style={iconStyle} />
                 <span>Mood Selector</span>
               </button>
-            ) : null}
+            )}
             <button style={downloadButtonStyle} onClick={handleDownloadCsv}>
               <span>Download CSV</span>
             </button>
