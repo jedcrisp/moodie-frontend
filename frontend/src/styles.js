@@ -15,33 +15,33 @@ export const headerStyle = {
 
 export const headerInnerStyle = {
   display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  flexWrap: 'wrap',
-  gap: '0.5rem',
+  flexDirection: 'column',
+  alignItems: 'stretch',
+  gap: '1rem',
 };
 
 export const brandingStyle = {
   display: 'flex',
   flexDirection: 'column',
-  alignItems: 'flex-start',
+  alignItems: 'center',
   gap: '0.5rem',
-  flexWrap: 'wrap',
+  width: '100%',
 };
 
 export const titleStyle = {
   fontSize: '1.5rem',
   fontWeight: 700,
-  background: 'linear-gradient(to right, #7C3AED, #7C3AED)', // Single color gradient for uniformity
+  background: 'linear-gradient(to right, #7C3AED, #7C3AED)',
   WebkitBackgroundClip: 'text',
   color: 'transparent',
 };
 
 export const controlsStyle = {
   display: 'flex',
+  justifyContent: 'center',
   gap: '0.5rem',
   flexWrap: 'wrap',
-  alignItems: 'center',
+  width: '100%',
 };
 
 export const iconStyle = { width: 20, height: 20 };
@@ -132,16 +132,19 @@ export const signOutStyle = {
 
 export const searchContainerStyle = {
   display: 'flex',
+  justifyContent: 'center',
   alignItems: 'center',
   gap: '0.5rem',
   width: '100%',
+  flexWrap: 'wrap',
 };
 
 export const searchInputStyle = {
   padding: '0.5rem 1rem',
   border: '1px solid #D1D5DB',
   borderRadius: '9999px',
-  width: '150px',
+  width: '200px',
+  maxWidth: '100%',
 };
 
 export const campusSelectorStyle = {
@@ -151,6 +154,8 @@ export const campusSelectorStyle = {
   backgroundColor: 'white',
   cursor: 'pointer',
   fontSize: '0.875rem',
+  width: '200px',
+  maxWidth: '100%',
 };
 
 export const mainStyle = { 
@@ -442,7 +447,7 @@ export const studentInfoGridStyle = {
 export const eventActionButtonStyle = {
   background: 'transparent',
   border: 'none',
-  cursor: Residue from previous CSS migration removed
+  cursor: 'pointer',
   marginLeft: '4px',
 };
 
