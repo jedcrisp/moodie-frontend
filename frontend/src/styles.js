@@ -1,501 +1,106 @@
-// frontend/src/styles.js
-// Existing styles (for AdminDashboard, Navbar, StudentTable, AddStudentModal, AddCounselorModal)
-export const containerStyle = {
-  width: '100vw',
-  height: '100vh',
-  display: 'flex',
-  flexDirection: 'column',
-  background: 'linear-gradient(to bottom right, rgba(255,182,193,0.3), rgba(173,216,230,0.3))',
+// frontend/src/components/Navbar.jsx
+import React from 'react';
+import { Upload, LogOut, Smile, ArrowLeft, UserPlus } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { uploadButtonStyle, addCounselorButtonStyle, addStudentButtonStyle, downloadButtonStyle, moodSelectorStyle, backButtonStyle, signOutStyle, headerStyle, headerInnerStyle, brandingStyle, titleStyle, searchContainerStyle, searchInputStyle, campusSelectorStyle, controlsStyle } from '../styles.js';
+
+const Navbar = ({
+  schoolDisplayName,
+  searchQuery,
+  setSearchQuery,
+  selectedCampus,
+  setSelectedCampus,
+  availableCampuses,
+  user,
+  uploading,
+  handleCsvUpload,
+  handleDownloadCsv,
+  setShowCounselorModal,
+  setShowStudentModal,
+  handleSignOut,
+}) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const onMoodSelector = location.pathname.endsWith('/mood-selector');
+
+  const handleMoodSelectorRedirect = () => navigate('mood-selector');
+
+  return (
+    <header style={headerStyle}>
+      <div style={headerInnerStyle}>
+        <div style={brandingStyle}>
+          <h1 style={titleStyle}>{schoolDisplayName} Dashboard</h1>
+          <div style={searchContainerStyle}>
+            <input
+              type="text"
+              placeholder="Search by name or ID…"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              style={searchInputStyle}
+              aria-label="Search students by name or ID"
+            />
+            <select
+              value={selectedCampus}
+              onChange={e => setSelectedCampus(e.target.value)}
+              style={campusSelectorStyle}
+              aria-label="Select campus"
+            >
+              <option value="">All Campuses</option>
+              {availableCampuses.map(campus => (
+                <option
+                  key={campus}
+                  value={campus}
+                  disabled={user?.campuses && !user.campuses.includes(campus)}
+                >
+                  {campus}
+                  {user?.campuses && !user.campuses.includes(campus) ? ' (Restricted)' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <div style={controlsStyle}>
+          <label style={uploadButtonStyle}>
+            <Upload style={{ width: 20, height: 20 }} />
+            <span>{uploading ? 'Uploading...' : 'Upload CSV'}</span>
+            <input
+              type="file"
+              accept=".csv"
+              style={{ display: 'none' }}
+              onChange={handleCsvUpload}
+              disabled={uploading}
+            />
+          </label>
+          <button style={addCounselorButtonStyle} onClick={() => setShowCounselorModal(true)} aria-label="Add a counselor">
+            <UserPlus style={{ width: 20, height: 20 }} />
+            <span>Add Counselor</span>
+          </button>
+          <button style={addStudentButtonStyle} onClick={() => setShowStudentModal(true)} aria-label="Add a student">
+            <UserPlus style={{ width: 20, height: 20 }} />
+            <span>Add Student</span>
+          </button>
+          {onMoodSelector ? (
+            <button style={backButtonStyle} onClick={() => navigate('/admin')} aria-label="Go back">
+              <ArrowLeft style={{ width: 20, height: 20 }} />
+              <span>Back</span>
+            </button>
+          ) : (
+            <button style={moodSelectorStyle} onClick={handleMoodSelectorRedirect} aria-label="Go to mood selector">
+              <Smile style={{ width: 20, height: 20 }} />
+              <span>Mood Selector</span>
+            </button>
+          )}
+          <button style={downloadButtonStyle} onClick={handleDownloadCsv} aria-label="Download CSV">
+            <span>Download CSV</span>
+          </button>
+          <button style={signOutStyle} onClick={handleSignOut} aria-label="Sign out">
+            <LogOut style={{ width: 20, height: 20 }} />
+            <span>Sign Out</span>
+          </button>
+        </div>
+      </div>
+    </header>
+  );
 };
 
-export const headerStyle = {
-  padding: '0.5rem 1rem',
-  background: 'linear-gradient(to right, #ede9fe, #fce7f3)',
-  boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
-};
-
-export const headerInnerStyle = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-};
-
-export const brandingStyle = {
-  display: 'flex',
-  flexDirection: 'column', // Stack vertically
-  alignItems: 'flex-start', // Align to the left
-  gap: '0.5rem',
-  flexWrap: 'wrap',
-};
-
-export const titleStyle = {
-  fontSize: '1.75rem',
-  fontWeight: 700,
-  background: 'linear-gradient(to right, #7C3AED, #EC4899)',
-  WebkitBackgroundClip: 'text',
-  color: 'transparent',
-};
-
-export const controlsStyle = {
-  display: 'flex',
-  gap: '0.5rem',
-  flexWrap: 'wrap',
-  alignItems: 'center',
-};
-
-export const iconStyle = { width: 20, height: 20 };
-
-export const uploadButtonStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: 6,
-  padding: '6px 12px',
-  backgroundColor: 'white',
-  border: '1px solid #A78BFA',
-  borderRadius: 9999,
-  color: '#7C3AED',
-  cursor: 'pointer',
-};
-
-export const addCounselorButtonStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: 6,
-  padding: '6px 12px',
-  backgroundColor: '#EC4899',
-  border: 'none',
-  borderRadius: 9999,
-  color: 'white',
-  cursor: 'pointer',
-};
-
-export const addStudentButtonStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: 6,
-  padding: '6px 12px',
-  backgroundColor: '#10B981',
-  border: 'none',
-  period: 9999,
-  color: 'white',
-  cursor: 'pointer',
-};
-
-export const downloadButtonStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: 6,
-  padding: '6px 12px',
-  backgroundColor: '#3B82F6',
-  border: 'none',
-  borderRadius: 9999,
-  color: 'white',
-  cursor: 'pointer',
-};
-
-export const moodSelectorStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: 6,
-  padding: '6px 12px',
-  backgroundColor: '#8B5CF6',
-  border: 'none',
-  borderRadius: 9999,
-  color: 'white',
-  cursor: 'pointer',
-};
-
-export const backButtonStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: 6,
-  padding: '6px 12px',
-  backgroundColor: '#6B7280',
-  border: 'none',
-  borderRadius: 9999,
-  color: 'white',
-  cursor: 'pointer',
-  alignSelf: 'flex-start', // Align button to the start (left)
-};
-
-export const signOutStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: 6,
-  padding: '6px 12px',
-  backgroundColor: '#9CA3AF',
-  border: 'none',
-  borderRadius: 9999,
-  color: 'white',
-  cursor: 'pointer',
-};
-
-export const searchContainerStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '0.5rem',
-  width: '100%', // Ensure it takes full width when stacked
-};
-
-export const searchInputStyle = {
-  padding: '0.5rem 1rem',
-  border: '1px solid #D1D5DB',
-  borderRadius: '9999px',
-  width: '200px',
-};
-
-export const campusSelectorStyle = {
-  padding: '0.5rem',
-  border: '1px solid #D1D5DB',
-  borderRadius: '4px',
-  backgroundColor: 'white',
-  cursor: 'pointer',
-};
-
-export const mainStyle = { flex: 1, overflow: 'auto', padding: '1rem' };
-
-export const loadingStyle = {
-  fontSize: '1.25rem',
-  color: '#7C3AED',
-  textAlign: 'center',
-  marginTop: 40,
-};
-
-export const tableContainerStyle = { width: '100%', overflowX: 'auto' };
-
-export const tableStyle = { width: '100%', borderCollapse: 'collapse' };
-
-export const theadStyle = {
-  background: 'linear-gradient(to right, #EDE9FE, #FCE7F3)',
-  position: 'sticky',
-  top: 0,
-};
-
-export const thStyle = {
-  padding: '8px 12px',
-  textAlign: 'left',
-  fontSize: '0.75rem',
-  fontWeight: 600,
-  color: '#7C3AED',
-  textTransform: 'uppercase',
-  borderBottom: '1px solid #D1D5DB',
-};
-
-export const tdStyle = {
-  padding: '8px 12px',
-  fontSize: '0.875rem',
-  color: '#4B5563',
-  borderBottom: '1px solid #E5E7EB',
-};
-
-export const linkStyle = {
-  color: '#3B82F6',
-  textDecoration: 'underline',
-};
-
-export const deleteButtonStyle = {
-  background: 'transparent',
-  border: 'none',
-  cursor: 'pointer',
-};
-
-export const tooltipStyle = {
-  position: 'relative',
-  display: 'inline-block',
-};
-
-export const tooltipTextStyle = {
-  visibility: 'hidden',
-  width: '200px',
-  backgroundColor: '#111827',
-  color: 'white',
-  textAlign: 'center',
-  borderRadius: '4px',
-  padding: '4px 8px',
-  position: 'absolute',
-  zIndex: 1,
-  bottom: '125%',
-  left: '50%',
-  transform: 'translateX(-50%)',
-  fontSize: '0.75rem',
-  opacity: 0,
-  transition: 'opacity 0.3s',
-};
-
-// Modal styles (used by AddStudentModal, AddCounselorModal, and StudentProfile)
-export const modalOverlayStyle = {
-  position: 'fixed',
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  zIndex: 1000,
-};
-
-export const modalStyle = {
-  backgroundColor: 'white',
-  padding: '1.5rem',
-  borderRadius: '8px',
-  width: '400px',
-  maxWidth: '90%',
-  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-};
-
-export const modalHeaderStyle = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  marginBottom: '1rem',
-};
-
-export const modalBodyStyle = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '1rem',
-};
-
-export const modalFooterStyle = {
-  display: 'flex',
-  justifyContent: 'flex-end',
-  gap: '0.5rem',
-  marginTop: '1rem',
-};
-
-export const formGroupStyle = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '0.25rem',
-};
-
-export const labelStyle = {
-  fontSize: '0.875rem',
-  fontWeight: 500,
-  color: '#4B5563',
-};
-
-export const modalInputStyle = {
-  padding: '0.5rem',
-  border: '1px solid #D1D5DB',
-  borderRadius: '4px',
-  fontSize: '0.875rem',
-};
-
-export const cancelButtonStyle = {
-  padding: '0.5rem 1rem',
-  backgroundColor: '#6B7280',
-  color: 'white',
-  border: 'none',
-  borderRadius: '4px',
-  cursor: 'pointer',
-};
-
-export const addButtonStyle = {
-  padding: '0.5rem 1rem',
-  backgroundColor: '#3B82F6',
-  color: 'white',
-  border: 'none',
-  borderRadius: '4px',
-  cursor: 'pointer',
-};
-
-// Styles for the custom pop-up
-// frontend/src/styles.js
-// ... (previous styles remain unchanged)
-
-// Styles for the custom pop-up
-export const customPopupOverlayStyle = {
-  position: 'fixed',
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  zIndex: 2000,
-};
-
-export const customPopupStyle = {
-  backgroundColor: 'white',
-  padding: '1rem',
-  borderRadius: '12px',
-  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-  maxWidth: '300px',
-  width: '100%',
-  textAlign: 'center',
-};
-
-export const customPopupMessageStyle = {
-  fontSize: '1rem',
-  color: '#1F2937',
-  marginBottom: '1rem',
-};
-
-export const customPopupButtonStyle = {
-  padding: '0.5rem 1rem',
-  backgroundColor: '#8B5CF6',
-  color: 'white',
-  border: 'none',
-  borderRadius: '9999px',
-  cursor: 'pointer',
-  fontSize: '0.875rem',
-};
-
-export const customPopupCancelButtonStyle = {
-  padding: '0.5rem 1rem',
-  backgroundColor: '#6B7280',
-  color: 'white',
-  border: 'none',
-  borderRadius: '9999px',
-  cursor: 'pointer',
-  fontSize: '0.875rem',
-  marginRight: '0.5rem',
-};
-
-
-// StudentProfile styles (already added previously)
-export const studentInfoGridStyle = {
-  display: 'grid',
-  gap: '0.05rem', // Further reduced gap between fields
-  fontSize: '0.875rem',
-  color: '#4B5563',
-  lineHeight: '1.2', // Reduce line height for tighter spacing
-};
-
-export const profileContainerStyle = {
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  minHeight: '100vh',
-  background: 'linear-gradient(to bottom right, rgba(255,182,193,0.3), rgba(173,216,230,0.3))',
-  padding: '1rem',
-};
-
-export const profileCardStyle = {
-  backgroundColor: 'white',
-  borderRadius: '12px',
-  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-  padding: '1.5rem',
-  maxWidth: '500px',
-  width: '100%',
-  margin: '0 auto',
-};
-
-export const profileHeaderStyle = {
-  display: 'flex',
-  flexDirection: 'column', // Stack vertically
-  gap: '0.5rem', // Smaller gap between button and name
-  marginBottom: '1rem',
-};
-
-export const profileContentStyle = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '1.5rem',
-};
-
-export const infoSectionStyle = {
-  display: 'flex',
-  flexDirection: 'column',
-  rowGap: '0.25rem',       // small gap between items
-  marginBottom: '1rem',
-  lineHeight: '1.3',       // tighten the line-height
-};
-
-export const eventsSectionStyle = {
-  padding: '0',
-};
-
-export const notesSectionStyle = {
-  padding: '0',
-};
-
-export const eventsListStyle = {
-  display: 'flex',
-  flexWrap: 'wrap',
-  gap: '0.5rem',
-  marginTop: '0.5rem',
-};
-
-export const eventChipStyle = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  padding: '4px 8px',
-  borderRadius: '9999px',
-  fontSize: '0.75rem',
-  fontWeight: 500,
-};
-
-export const addEventButtonStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: 6,
-  padding: '4px 8px',
-  backgroundColor: '#10B981',
-  border: 'none',
-  borderRadius: 9999,
-  color: 'white',
-  cursor: 'pointer',
-  fontSize: '0.875rem',
-};
-
-export const editButtonStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: 6,
-  padding: '4px 8px',
-  backgroundColor: '#3B82F6',
-  border: 'none',
-  borderRadius: 9999,
-  color: 'white',
-  cursor: 'pointer',
-  fontSize: '0.875rem',
-};
-
-export const saveButtonStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: 6,
-  padding: '4px 8px',
-  backgroundColor: '#10B981',
-  border: 'none',
-  borderRadius: 9999,
-  color: 'white',
-  cursor: 'pointer',
-  fontSize: '0.875rem',
-};
-
-export const cancelEditButtonStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '6px',
-  padding: '4px 8px',
-  backgroundColor: '#6B7280',
-  border: 'none',
-  borderRadius: 9999,
-  color: 'white',
-  cursor: 'pointer',
-  fontSize: '0.875rem',
-};
-
-export const notesTextareaStyle = {
-  padding: '0.5rem',
-  border: '1px solid #D1D5DB',
-  borderRadius: '4px',
-  fontSize: '0.875rem',
-  resize: 'vertical',
-  minHeight: '100px',
-  width: '100%',
-};
-
-export const eventActionButtonStyle = {
-  background: 'transparent',
-  border: 'none',
-  cursor: 'pointer',
-  marginLeft: '4px',
-};
+export default Navbar;
