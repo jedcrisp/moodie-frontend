@@ -1,34 +1,119 @@
-// frontend/src/components/AdminDashboard.jsx
-import React, { useState, useEffect } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
-import { getAuth, signOut } from 'firebase/auth';
-import { getFirestore, collection, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
-import Navbar from './Navbar.jsx';
-import StudentTable from './StudentTable.jsx';
-import AddStudentModal from './AddStudentModal.jsx';
-import AddCounselorModal from './AddCounselorModal.jsx';
-import useStudents from '../hooks/useStudents.js';
-import useSchoolData from '../hooks/useSchoolData.js';
-import { containerStyle, mainStyle, loadingStyle } from '../styles.js';
+// frontend/src/hooks/useStudents.js
+import { useState, useEffect, useMemo } from 'react';
+import { getFirestore, collection, getDocs, deleteDoc, doc, getDoc } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
+import { tooltipTextStyle } from '../styles.js';
 
-export default function AdminDashboard({ user }) {
-  const navigate = useNavigate();
-  const db = getFirestore();
-  const [uploading, setUploading] = useState(false);
-  const [showStudentModal, setShowStudentModal] = useState(false);
-  const [showCounselorModal, setShowCounselorModal] = useState(false);
-  const [newStudentName, setNewStudentName] = useState('');
-  const [newStudentId, setNewStudentId] = useState('');
-  const [newStudentEmail, setNewStudentEmail] = useState('');
-  const [newStudentGrade, setNewStudentGrade] = useState('');
-  const [newStudentBirthday, setNewStudentBirthday] = useState('');
-  const [newStudentCampus, setNewStudentCampus] = useState('');
-  const [newCounselorName, setNewCounselorName] = useState('');
-  const [newCounselorEmail, setNewCounselorEmail] = useState('');
-  const [newCounselorCampus, setNewCounselorCampus] = useState('');
+export default function useStudents(db, user, defaultCampus) {
+  const [students, setStudents] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCampus, setSelectedCampus] = useState(defaultCampus || '');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [tokenClaims, setTokenClaims] = useState(null);
 
-  const { schoolDisplayName, availableCampuses, fetchSchoolData } = useSchoolData(db, user);
-  const {
+  // Separate useEffect for token refresh
+  useEffect(() => {
+    const auth = getAuth();
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      currentUser.getIdTokenResult(true).then(tokenResult => {
+        console.log('Token claims:', tokenResult.claims);
+        console.log('Token email (request.auth.token.email):', tokenResult.claims.email);
+        console.log('Token UID (request.auth.uid):', tokenResult.claims.sub);
+        setTokenClaims(tokenResult.claims);
+      }).catch(err => {
+        console.error('Error getting token claims:', err);
+      });
+    }
+  }, []);
+
+  const fetchStudents = async () => {
+    if (!user || !user.school) {
+      setError('User or school not defined');
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const userDocRef = doc(db, 'schools', user.school, 'users', user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+      if (userDocSnap.exists()) {
+        console.log('User role document:', userDocSnap.data());
+      } else {
+        console.log('User role document does not exist at:', userDocRef.path);
+      }
+
+      const auth = getAuth();
+      const currentUser = auth.currentUser;
+      const userEmail = currentUser ? currentUser.email : 'unknown';
+      const counselorDocRef = doc(db, 'schools', user.school, 'counselors', userEmail);
+      const counselorDocSnap = await getDoc(counselorDocRef);
+      if (counselorDocSnap.exists()) {
+        console.log('Counselor document by email exists:', counselorDocSnap.data());
+      } else {
+        console.log('Counselor document does not exist at:', counselorDocRef.path);
+      }
+
+      const studentsSnap = await getDocs(collection(db, 'schools', user.school, 'students'));
+      const moodsSnap = await getDocs(collection(db, 'schools', user.school, 'moods'));
+      const eventsSnap = await getDocs(collection(db, 'schools', user.school, 'lifeEvents'));
+
+      const students = studentsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const moods = moodsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const events = eventsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      const studentsWithMoodsAndEvents = students.map(student => {
+        const studentMoods = moods.filter(m => m.studentId === student.id);
+        const studentEvents = events.filter(e => e.studentId === student.id);
+        const moodsWithEmoji = studentMoods.map(m => ({
+          ...m,
+          emoji: m.score === 1 ? '😢' : m.score === 2 ? '😕' : m.score === 3 ? '😐' : m.score === 4 ? '😊' : '😄',
+        }));
+        const averageMood = studentMoods.length > 0
+          ? studentMoods.reduce((sum, m) => sum + m.score, 0) / studentMoods.length
+          : null;
+        const recentEvent = studentEvents.find(event => {
+          const eventDate = event.date.toDate();
+          const now = new Date();
+          const diffDays = (now - eventDate) / (1000 * 60 * 60 * 24);
+          return diffDays <= 60;
+        });
+
+        return {
+          ...student,
+          moods: moodsWithEmoji.slice(0, 5),
+          averageMood,
+          recentLifeEvent: recentEvent || null,
+        };
+      });
+
+      setStudents(studentsWithMoodsAndEvents);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching students:', err);
+      setError('Failed to fetch students: ' + err.message);
+      setStudents([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStudents();
+  }, [user, db]);
+
+  const filteredStudents = useMemo(() => {
+    return students.filter(student => {
+      const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        student.studentId.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCampus = selectedCampus ? student.campus === selectedCampus : true;
+      return matchesSearch && matchesCampus;
+    });
+  }, [students, searchQuery, selectedCampus]);
+
+  return {
     filteredStudents,
     searchQuery,
     setSearchQuery,
@@ -36,192 +121,17 @@ export default function AdminDashboard({ user }) {
     setSelectedCampus,
     loading,
     fetchStudents,
-    deleteStudent,
-  } = useStudents(db, user, user?.campuses?.length > 0 ? user.campuses[0] : selectedCampus);
-
-  useEffect(() => {
-    const t = setTimeout(() => {
-      handleSignOut();
-      navigate('/signin');
-    }, 10 * 60 * 1000);
-    return () => clearTimeout(t);
-  }, [navigate]);
-
-  const handleSignOut = async () => {
-    try {
-      await signOut(getAuth());
-      navigate('/signin');
-    } catch (err) {
-      console.error('Sign-out error:', err);
-    }
+    deleteStudent: async (studentId) => {
+      if (!studentId) return;
+      try {
+        await deleteDoc(doc(db, 'schools', user.school, 'students', studentId));
+        await fetchStudents();
+      } catch (err) {
+        console.error('Error deleting student:', err);
+        setError('Failed to delete student: ' + err.message);
+      }
+    },
+    error,
+    tokenClaims,
   };
-
-  const handleCsvUpload = async e => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setUploading(true);
-    const text = await file.text();
-    const rows = text.split('\n').map(row => row.split(',').map(cell => cell.trim()));
-    const headers = rows[0];
-    const data = rows.slice(1).filter(row => row.length === headers.length);
-    try {
-      const studentsToAdd = data.map(row => ({
-        name: row[0],
-        studentId: row[1],
-        email: row[2] || '',
-        grade: row[3] || '',
-        birthday: row[4] || '',
-        campus: row[5] || '',
-        createdAt: serverTimestamp(),
-      }));
-      const batch = studentsToAdd.map(student =>
-        addDoc(collection(db, 'schools', user.school, 'students'), student)
-      );
-      await Promise.all(batch);
-      await fetchSchoolData();
-      await fetchStudents();
-    } catch (err) {
-      console.error('CSV upload error:', err);
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleDownloadCsv = async () => {
-    const headers = ['Name', 'Student ID', 'Email', 'Grade', 'Birthday', 'Campus', 'Average Mood'];
-    const rows = filteredStudents.map(s => [
-      s.name || '',
-      s.studentId || '',
-      s.email || '',
-      s.grade || '',
-      s.birthday || '',
-      s.campus || '',
-      s.averageMood ? s.averageMood.toFixed(2) : '',
-    ]);
-    const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'students.csv';
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const handleAddStudent = async () => {
-    if (!newStudentName || !newStudentId || !newStudentEmail || !newStudentCampus) {
-      alert('Please fill in all required fields.');
-      return;
-    }
-    try {
-      await addDoc(collection(db, 'schools', user.school, 'students'), {
-        name: newStudentName,
-        studentId: newStudentId,
-        email: newStudentEmail,
-        grade: newStudentGrade,
-        birthday: newStudentBirthday,
-        campus: newStudentCampus,
-        createdAt: serverTimestamp(),
-      });
-      setShowStudentModal(false);
-      setNewStudentName('');
-      setNewStudentId('');
-      setNewStudentEmail('');
-      setNewStudentGrade('');
-      setNewStudentBirthday('');
-      setNewStudentCampus('');
-      await fetchStudents();
-    } catch (err) {
-      console.error('Error adding student:', err);
-      alert('Failed to add student. Please try again.');
-    }
-  };
-
-  const handleAddCounselor = async () => {
-    if (!newCounselorName || !newCounselorEmail || !newCounselorCampus) {
-      alert('Please fill in all required fields.');
-      return;
-    }
-    try {
-      const normalizedEmail = newCounselorEmail.toLowerCase();
-      await setDoc(doc(db, 'schools', user.school, 'counselors', normalizedEmail), {
-        name: newCounselorName,
-        email: normalizedEmail,
-        campus: newCounselorCampus,
-        createdAt: serverTimestamp(),
-      });
-
-      alert('Counselor added. Please ensure the counselor is registered in Firebase Auth and their UID is linked in the users collection.');
-      setShowCounselorModal(false);
-      setNewCounselorName('');
-      setNewCounselorEmail('');
-      setNewCounselorCampus('');
-    } catch (err) {
-      console.error('Error adding counselor:', err);
-      alert('Failed to add counselor. Please try again.');
-    }
-  };
-
-  return (
-    <div style={containerStyle}>
-      <Navbar
-        schoolDisplayName={schoolDisplayName}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        selectedCampus={selectedCampus}
-        setSelectedCampus={setSelectedCampus}
-        availableCampuses={availableCampuses}
-        user={user}
-        uploading={uploading}
-        handleCsvUpload={handleCsvUpload}
-        handleDownloadCsv={handleDownloadCsv}
-        setShowCounselorModal={setShowCounselorModal}
-        setShowStudentModal={setShowStudentModal}
-        handleSignOut={handleSignOut}
-      />
-      <main style={mainStyle}>
-        {loading ? (
-          <div style={loadingStyle}>Loading...</div>
-        ) : (
-          <>
-            <AddStudentModal
-              showStudentModal={showStudentModal}
-              setShowStudentModal={setShowStudentModal}
-              newStudentName={newStudentName}
-              setNewStudentName={setNewStudentName}
-              newStudentId={newStudentId}
-              setNewStudentId={setNewStudentId}
-              newStudentEmail={newStudentEmail}
-              setNewStudentEmail={setNewStudentEmail}
-              newStudentGrade={newStudentGrade}
-              setNewStudentGrade={setNewStudentGrade}
-              newStudentBirthday={newStudentBirthday}
-              setNewStudentBirthday={setNewStudentBirthday}
-              newStudentCampus={newStudentCampus}
-              setNewStudentCampus={setNewStudentCampus}
-              availableCampuses={availableCampuses}
-              selectedCampus={selectedCampus}
-              handleAddStudent={handleAddStudent}
-            />
-            <AddCounselorModal
-              showCounselorModal={showCounselorModal}
-              setShowCounselorModal={setShowCounselorModal}
-              newCounselorName={newCounselorName}
-              setNewCounselorName={setNewCounselorName}
-              newCounselorEmail={newCounselorEmail}
-              setNewCounselorEmail={setNewCounselorEmail}
-              newCounselorCampus={newCounselorCampus}
-              setNewCounselorCampus={setNewCounselorCampus}
-              handleAddCounselor={handleAddCounselor}
-            />
-            <Outlet />
-            <StudentTable
-              filteredStudents={filteredStudents}
-              deleteStudent={deleteStudent}
-            />
-          </>
-        )}
-      </main>
-    </div>
-  );
 }
