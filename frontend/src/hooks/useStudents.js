@@ -1,6 +1,7 @@
 // frontend/src/hooks/useStudents.js
 import { useState, useEffect, useMemo } from 'react';
 import { getFirestore, collection, getDocs, deleteDoc, doc, getDoc } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 import { tooltipTextStyle } from '../styles.js';
 
 export default function useStudents(db, user, defaultCampus) {
@@ -20,7 +21,13 @@ export default function useStudents(db, user, defaultCampus) {
 
     console.log('Fetching students for user:', user);
 
-    // Check if the user is a counselor
+    // Get the user's email from Firebase Auth
+    const auth = getAuth();
+    const currentUser = auth.currentUser;
+    const userEmail = currentUser ? currentUser.email : 'unknown';
+    console.log('User email:', userEmail);
+
+    // Check Condition 1: User role document
     try {
       const userDocRef = doc(db, 'schools', user.school, 'users', user.uid);
       const userDocSnap = await getDoc(userDocRef);
@@ -30,7 +37,20 @@ export default function useStudents(db, user, defaultCampus) {
         console.log('User role document does not exist at:', userDocRef.path);
       }
     } catch (err) {
-      console.error('Error checking user role:', err);
+      console.error('Error checking user role document:', err);
+    }
+
+    // Check Condition 2: Counselor document by email
+    try {
+      const counselorDocRef = doc(db, 'schools', user.school, 'counselors', userEmail);
+      const counselorDocSnap = await getDoc(counselorDocRef);
+      if (counselorDocSnap.exists()) {
+        console.log('Counselor document by email exists:', counselorDocSnap.data());
+      } else {
+        console.log('Counselor document does not exist at:', counselorDocRef.path);
+      }
+    } catch (err) {
+      console.error('Error checking counselor document by email:', err);
     }
 
     setLoading(true);
