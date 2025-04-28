@@ -2,6 +2,7 @@
 import React from 'react';
 import { Upload, LogOut, Smile, ArrowLeft, UserPlus } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { headerStyle, headerInnerStyle, brandingStyle, titleStyle, searchContainerStyle, searchInputStyle, campusSelectorStyle, controlsStyle, uploadButtonStyle, addCounselorButtonStyle, addStudentButtonStyle, downloadButtonStyle, moodSelectorStyle, backButtonStyle, signOutStyle } from '../styles.js';
 
 const Navbar = ({
   schoolDisplayName,
@@ -25,23 +26,23 @@ const Navbar = ({
   const handleMoodSelectorRedirect = () => navigate('mood-selector');
 
   return (
-    <header className="header">
-      <div className="header-inner">
-        <div className="branding">
-          <h1 className="title">{schoolDisplayName} Dashboard</h1>
-          <div className="search-container">
+    <header style={headerStyle}>
+      <div style={headerInnerStyle}>
+        <div style={brandingStyle}>
+          <h1 style={titleStyle}>{schoolDisplayName} Dashboard</h1>
+          <div style={searchContainerStyle}>
             <input
               type="text"
               placeholder="Search by name or ID…"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="search-input"
+              style={searchInputStyle}
               aria-label="Search students by name or ID"
             />
             <select
               value={selectedCampus}
               onChange={e => setSelectedCampus(e.target.value)}
-              className="campus-selector"
+              style={campusSelectorStyle}
               aria-label="Select campus"
             >
               <option value="">All Campuses</option>
@@ -58,9 +59,9 @@ const Navbar = ({
             </select>
           </div>
         </div>
-        <div className="controls">
-          <label className="upload-button">
-            <Upload className="icon" />
+        <div style={controlsStyle}>
+          <label style={uploadButtonStyle}>
+            <Upload style={iconStyle} />
             <span>{uploading ? 'Uploading...' : 'Upload CSV'}</span>
             <input
               type="file"
@@ -70,30 +71,30 @@ const Navbar = ({
               disabled={uploading}
             />
           </label>
-          <button className="add-counselor-button" onClick={() => setShowCounselorModal(true)} aria-label="Add a counselor">
-            <UserPlus className="icon" />
+          <button style={addCounselorButtonStyle} onClick={() => setShowCounselorModal(true)} aria-label="Add a counselor">
+            <UserPlus style={iconStyle} />
             <span>Add Counselor</span>
           </button>
-          <button className="add-student-button" onClick={() => setShowStudentModal(true)} aria-label="Add a student">
-            <UserPlus className="icon" />
+          <button style={addStudentButtonStyle} onClick={() => setShowStudentModal(true)} aria-label="Add a student">
+            <UserPlus style={iconStyle} />
             <span>Add Student</span>
           </button>
           {onMoodSelector ? (
-            <button className="back-button" onClick={() => navigate('/admin')} aria-label="Go back">
-              <ArrowLeft className="icon" />
+            <button style={backButtonStyle} onClick={() => navigate('/admin')} aria-label="Go back">
+              <ArrowLeft style={iconStyle} />
               <span>Back</span>
             </button>
           ) : (
-            <button className="mood-selector-button" onClick={handleMoodSelectorRedirect} aria-label="Go to mood selector">
-              <Smile className="icon" />
+            <button style={moodSelectorStyle} onClick={handleMoodSelectorRedirect} aria-label="Go to mood selector">
+              <Smile style={iconStyle} />
               <span>Mood Selector</span>
             </button>
           )}
-          <button className="download-button" onClick={handleDownloadCsv} aria-label="Download CSV">
+          <button style={downloadButtonStyle} onClick={handleDownloadCsv} aria-label="Download CSV">
             <span>Download CSV</span>
           </button>
-          <button className="sign-out-button" onClick={handleSignOut} aria-label="Sign out">
-            <LogOut className="icon" />
+          <button style={signOutStyle} onClick={handleSignOut} aria-label="Sign out">
+            <LogOut style={iconStyle} />
             <span>Sign Out</span>
           </button>
         </div>
