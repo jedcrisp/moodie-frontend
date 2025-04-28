@@ -207,7 +207,7 @@ export const deleteButtonStyle = {
 
 export const tooltipStyle = {
   position: 'relative',
-  display: 'inlineBlock',
+  display: 'inline-block',
 };
 
 export const tooltipTextStyle = {
@@ -430,7 +430,6 @@ export const notesTextareaStyle = {
   minHeight: '80px',
   width: '100%',
   color: '#4B5563',
-  // Removed ::placeholder since it's invalid in JS objects
 };
 
 export const studentInfoGridStyle = {
