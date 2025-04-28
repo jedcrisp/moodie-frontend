@@ -37,20 +37,9 @@ export default function AdminDashboard({ user }) {
     loading,
     fetchStudents,
     deleteStudent,
-    error,
   } = useStudents(db, user, user?.campuses?.length > 0 ? user.campuses[0] : selectedCampus);
 
   useEffect(() => {
-    const auth = getAuth();
-    if (auth.currentUser) {
-      auth.currentUser.getIdTokenResult(true).then(tokenResult => {
-        console.log('Token claims:', tokenResult.claims);
-        console.log('Token email:', tokenResult.claims.email);
-      }).catch(err => {
-        console.error('Error refreshing token:', err);
-      });
-    }
-
     const t = setTimeout(() => {
       handleSignOut();
       navigate('/signin');
@@ -193,8 +182,6 @@ export default function AdminDashboard({ user }) {
       <main style={mainStyle}>
         {loading ? (
           <div style={loadingStyle}>Loading...</div>
-        ) : error ? (
-          <div style={{ ...loadingStyle, color: '#EF4444' }}>{error}</div>
         ) : (
           <>
             <AddStudentModal
