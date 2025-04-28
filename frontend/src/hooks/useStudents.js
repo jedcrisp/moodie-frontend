@@ -1,79 +1,52 @@
 // frontend/src/hooks/useStudents.js
 import { useState, useEffect } from 'react';
-import { collection, getDocs, query, orderBy, limit, where, deleteDoc } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { tooltipTextStyle } from '../styles.js';
 
-const useStudents = (db, user, selectedCampus) => {
-  const [students, setStudents] = useState([]);
+export default function useStudents(db, user, defaultCampus) {
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCampus, setSelectedCampus] = useState(defaultCampus || '');
   const [loading, setLoading] = useState(true);
 
   const fetchStudents = async () => {
+    if (!user || !user.school) return;
     setLoading(true);
     try {
-      const studentsQuery = selectedCampus
-        ? query(
-            collection(db, 'schools', user.school, 'students'),
-            where('campus', '==', selectedCampus)
-          )
-        : collection(db, 'schools', user.school, 'students');
-      const snap = await getDocs(studentsQuery);
-      const arr = await Promise.all(
-        snap.docs.map(async ds => {
-          const s = ds.data();
-          // Fetch last 5 moods
-          const moodsSnap = await getDocs(
-            query(
-              collection(
-                db,
-                'schools',
-                user.school,
-                'students',
-                ds.id,
-                'moods'
-              ),
-              orderBy('date', 'desc'),
-              limit(5)
-            )
-          );
-          const moods = moodsSnap.docs.map(d => d.data());
-          const avg =
-            moods.length > 0
-              ? moods.reduce((sum, m) => sum + (m.score || 3), 0) /
-                moods.length
-              : null;
+      const studentsSnap = await getDocs(collection(db, 'schools', user.school, 'students'));
+      const moodsSnap = await getDocs(collection(db, 'schools', user.school, 'moods'));
+      const eventsSnap = await getDocs(collection(db, 'schools', user.school, 'lifeEvents'));
 
-          // Fetch life events
-          const eventsSnap = await getDocs(
-            collection(db, 'schools', user.school, 'students', ds.id, 'lifeEvents')
-          );
-          const events = eventsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          events.sort((a, b) => b.date.toDate() - a.date.toDate()); // Sort by date, newest first
-          const recentEvent = events.find(event => {
-            const eventDate = event.date.toDate();
-            const now = new Date();
-            const diffDays = (now - eventDate) / (1000 * 60 * 60 * 24);
-            return diffDays <= 60; // Within 60 days
-          });
+      const students = studentsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const moods = moodsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const events = eventsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-          const studentData = { 
-            id: ds.id, 
-            ...s, 
-            moods, 
-            averageMood: avg, 
-            lifeEvents: events,
-            recentLifeEvent: recentEvent ? {
-              type: recentEvent.type,
-              date: recentEvent.date.toDate(),
-            } : null 
-          };
-          console.log('Student data:', studentData); // Debug log
-          return studentData;
-        })
-      );
-      arr.sort((a, b) => (a.averageMood ?? 99) - (b.averageMood ?? 99));
-      setStudents(arr);
-      setFilteredStudents(arr);
+      const studentsWithMoodsAndEvents = students.map(student => {
+        const studentMoods = moods.filter(m => m.studentId === student.id);
+        const studentEvents = events.filter(e => e.studentId === student.id);
+        const moodsWithEmoji = studentMoods.map(m => ({
+          ...m,
+          emoji: m.score === 1 ? '😢' : m.score === 2 ? '😕' : m.score === 3 ? '😐' : m.score === 4 ? '😊' : '😄',
+        }));
+        const averageMood = studentMoods.length > 0
+          ? studentMoods.reduce((sum, m) => sum + m.score, 0) / studentMoods.length
+          : null;
+        const recentEvent = studentEvents.find(event => {
+          const eventDate = event.date.toDate();
+          const now = new Date();
+          const diffDays = (now - eventDate) / (1000 * 60 * 60 * 24);
+          return diffDays <= 60;
+        });
+
+        return {
+          ...student,
+          moods: moodsWithEmoji.slice(0, 5),
+          averageMood,
+          recentLifeEvent: recentEvent || null,
+        };
+      });
+
+      setFilteredStudents(studentsWithMoodsAndEvents);
     } catch (err) {
       console.error('Error fetching students:', err);
     } finally {
@@ -82,61 +55,37 @@ const useStudents = (db, user, selectedCampus) => {
   };
 
   useEffect(() => {
-    if (user?.school) fetchStudents();
-  }, [db, user, selectedCampus]);
+    fetchStudents();
+  }, [user, db]);
 
-  useEffect(() => {
-    const q = searchQuery.toLowerCase();
-    setFilteredStudents(
-      students.filter(
-        s =>
-          (s.name || '').toLowerCase().includes(q) ||
-          (s.studentId || '').toLowerCase().includes(q)
-      )
-    );
-  }, [searchQuery, students]);
-
-  const deleteStudent = async id => {
-    if (!window.confirm('Are you sure you want to delete this student? This cannot be undone.')) {
-      return;
-    }
+  const deleteStudent = async (studentId) => {
+    if (!studentId) return;
     try {
-      const moodsSnap = await getDocs(
-        collection(db, 'schools', user.school, 'students', id, 'moods')
-      );
-      const deleteMoodsPromises = moodsSnap.docs.map(moodDoc =>
-        deleteDoc(moodDoc.ref)
-      );
-      await Promise.all(deleteMoodsPromises);
-
-      // Delete life events
-      const eventsSnap = await getDocs(
-        collection(db, 'schools', user.school, 'students', id, 'lifeEvents')
-      );
-      const deleteEventsPromises = eventsSnap.docs.map(eventDoc =>
-        deleteDoc(eventDoc.ref)
-      );
-      await Promise.all(deleteEventsPromises);
-
-      await deleteDoc(doc(db, 'schools', user.school, 'students', id));
-      setStudents(prev => prev.filter(student => student.id !== id));
-      setFilteredStudents(prev => prev.filter(student => student.id !== id));
-      alert('Student deleted successfully.');
+      await deleteDoc(doc(db, 'schools', user.school, 'students', studentId));
+      await fetchStudents();
     } catch (err) {
       console.error('Error deleting student:', err);
-      alert('Failed to delete student. Please try again.');
     }
   };
 
+  useEffect(() => {
+    const filtered = filteredStudents.filter(student => {
+      const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        student.studentId.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCampus = selectedCampus ? student.campus === selectedCampus : true;
+      return matchesSearch && matchesCampus;
+    });
+    setFilteredStudents(filtered);
+  }, [searchQuery, selectedCampus]);
+
   return {
-    students,
     filteredStudents,
     searchQuery,
     setSearchQuery,
+    selectedCampus,
+    setSelectedCampus,
     loading,
     fetchStudents,
     deleteStudent,
   };
-};
-
-export default useStudents;
+}
