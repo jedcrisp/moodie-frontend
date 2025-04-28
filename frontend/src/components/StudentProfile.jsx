@@ -15,7 +15,7 @@ export default function StudentProfile({ user }) {
   const [isEditingEvent, setIsEditingEvent] = useState(false);
   const [currentEventId, setCurrentEventId] = useState(null);
   const [newEventType, setNewEventType] = useState('');
-  const [newEventDate, setNewEventDate] = useState(new Date().toISOString().split('T')[0]);
+  const [newEventDate, setNewEventDate] = useState(new Date().toISOString().split('T')[0]); // Initialize with today's date
   const [newEventNotes, setNewEventNotes] = useState('');
   const [notes, setNotes] = useState('');
   const [isEditing, setIsEditing] = useState(false);
@@ -59,8 +59,18 @@ export default function StudentProfile({ user }) {
         const eventsSnap = await getDocs(
           collection(db, 'schools', user.school, 'students', studentId, 'lifeEvents')
         );
-        const events = eventsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        events.sort((a, b) => b.date.toDate() - a.date.toDate());
+        const events = eventsSnap.docs.map(doc => {
+          const eventData = { id: doc.id, ...doc.data() };
+          // Ensure event.date is a valid Date object
+          if (eventData.date && typeof eventData.date.toDate === 'function') {
+            eventData.date = eventData.date.toDate();
+          } else {
+            console.warn(`Invalid date for event ${eventData.id}:`, eventData.date);
+            eventData.date = new Date(); // Fallback to current date
+          }
+          return eventData;
+        });
+        events.sort((a, b) => b.date - a.date);
         setLifeEvents(events);
 
         // Fetch notes
@@ -82,6 +92,11 @@ export default function StudentProfile({ user }) {
       alert('Please select an event type and date.');
       return;
     }
+    const parsedDate = new Date(newEventDate);
+    if (isNaN(parsedDate.getTime())) {
+      alert('Please enter a valid date.');
+      return;
+    }
     if (newEventNotes.length > 100) {
       alert('Notes cannot exceed 100 characters.');
       return;
@@ -89,7 +104,7 @@ export default function StudentProfile({ user }) {
     try {
       const eventData = {
         type: newEventType,
-        date: new Date(newEventDate),
+        date: parsedDate,
         notes: newEventNotes.trim(),
         createdAt: serverTimestamp(),
       };
@@ -98,7 +113,7 @@ export default function StudentProfile({ user }) {
         await setDoc(doc(db, 'schools', user.school, 'students', studentId, 'lifeEvents', currentEventId), eventData, { merge: true });
         setLifeEvents(prev =>
           prev.map(event =>
-            event.id === currentEventId ? { ...event, ...eventData, date: new Date(newEventDate) } : event
+            event.id === currentEventId ? { ...event, ...eventData, date: parsedDate } : event
           )
         );
         alert('Life event updated successfully.');
@@ -109,7 +124,7 @@ export default function StudentProfile({ user }) {
           eventData
         );
         setLifeEvents(prev => [
-          { id: eventRef.id, ...eventData, date: new Date(newEventDate) },
+          { id: eventRef.id, ...eventData, date: parsedDate },
           ...prev,
         ]);
         alert('Life event added successfully.');
@@ -130,7 +145,11 @@ export default function StudentProfile({ user }) {
     setIsEditingEvent(true);
     setCurrentEventId(event.id);
     setNewEventType(event.type);
-    setNewEventDate(new Date(event.date).toISOString().split('T')[0]);
+    // Safely convert event.date to YYYY-MM-DD format
+    const eventDate = event.date instanceof Date && !isNaN(event.date.getTime())
+      ? event.date.toISOString().split('T')[0]
+      : new Date().toISOString().split('T')[0]; // Fallback to today if invalid
+    setNewEventDate(eventDate);
     setNewEventNotes(event.notes || '');
     setShowEventModal(true);
   };
@@ -404,13 +423,16 @@ export default function StudentProfile({ user }) {
                     backgroundColor: eventType.category === 'emotional' ? '#FEE2E2' : eventType.category === 'relocation' ? '#DBEAFE' : '#E5E7EB',
                     color: eventType.category === 'emotional' ? '#DC2626' : eventType.category === 'relocation' ? '#2563EB' : '#4B5563',
                   };
+                  const eventDate = event.date instanceof Date && !isNaN(event.date.getTime())
+                    ? event.date
+                    : new Date(); // Fallback to current date if invalid
                   return (
                     <div key={event.id} style={{ display: 'flex', alignItems: 'center' }}>
                       <div style={chipStyle}>
                         <span style={{ marginRight: '4px' }}>
                           {eventType.category === 'emotional' ? '❤️' : eventType.category === 'relocation' ? '🏠' : '📅'}
                         </span>
-                        {event.type} ({new Date(event.date).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' })})
+                        {event.type} ({eventDate.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' })})
                         {event.notes && <span style={{ marginLeft: '4px', fontStyle: 'italic' }}>- {event.notes}</span>}
                       </div>
                       <button
