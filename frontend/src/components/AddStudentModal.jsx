@@ -1,6 +1,7 @@
 // frontend/src/components/AddStudentModal.jsx
 import React from 'react';
 import { X } from 'lucide-react';
+import { modalOverlayStyle, modalStyle, modalHeaderStyle, modalBodyStyle, modalFooterStyle, formGroupStyle, labelStyle, modalInputStyle, cancelButtonStyle, addButtonStyle } from '../styles.js';
 
 const AddStudentModal = ({
   showStudentModal,
@@ -22,79 +23,78 @@ const AddStudentModal = ({
   handleAddStudent,
 }) => (
   showStudentModal && (
-    <div className="modal-overlay">
-      <div className="modal">
-        <div className="modal-header">
+    <div style={modalOverlayStyle}>
+      <div style={modalStyle}>
+        <div style={modalHeaderStyle}>
           <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Add Student</h2>
           <button
             onClick={() => setShowStudentModal(false)}
-            className="cancel-button"
             style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
             aria-label="Close modal"
           >
-            <X className="icon" style={{ width: 20, height: 20 }} />
+            <X style={{ width: 20, height: 20 }} />
           </button>
         </div>
-        <div className="modal-body">
-          <div className="form-group">
-            <label className="label">Name *</label>
+        <div style={modalBodyStyle}>
+          <div style={formGroupStyle}>
+            <label style={labelStyle}>Name *</label>
             <input
               type="text"
               value={newStudentName}
               onChange={e => setNewStudentName(e.target.value)}
-              className="modal-input"
+              style={modalInputStyle}
               placeholder="Enter student name"
               required
             />
           </div>
-          <div className="form-group">
-            <label className="label">Student ID *</label>
+          <div style={formGroupStyle}>
+            <label style={labelStyle}>Student ID *</label>
             <input
               type="text"
               value={newStudentId}
               onChange={e => setNewStudentId(e.target.value)}
-              className="modal-input"
+              style={modalInputStyle}
               placeholder="Enter student ID"
               required
             />
           </div>
-          <div className="form-group">
-            <label className="label">Email *</label>
+          <div style={formGroupStyle}>
+            <label style={labelStyle}>Email *</label>
             <input
               type="email"
               value={newStudentEmail}
               onChange={e => setNewStudentEmail(e.target.value)}
-              className="modal-input"
+              style={modalInputStyle}
               placeholder="Enter student email"
               required
             />
           </div>
-          <div className="form-group">
-            <label className="label">Grade</label>
+          <div style={formGroupStyle}>
+            <label style={labelStyle}>Grade</label>
             <input
               type="text"
               value={newStudentGrade}
               onChange={e => setNewStudentGrade(e.target.value)}
-              className="modal-input"
+              style={modalInputStyle}
               placeholder="Enter grade (e.g., 9)"
             />
           </div>
-          <div className="form-group">
-            <label className="label">Birthday</label>
+          <div style={formGroupStyle}>
+            <label style={labelStyle}>Birthday</label>
             <input
               type="text"
               value={newStudentBirthday}
               onChange={e => setNewStudentBirthday(e.target.value)}
-              className="modal-input"
+              style={modalInputStyle}
               placeholder="Enter birthday (e.g., MM/DD/YYYY)"
             />
           </div>
-          <div className="form-group">
-            <label className="label">Campus *</label>
+          <div style={formGroupStyle}>
+            <label style={labelStyle}>Campus *</label>
             <select
               value={newStudentCampus}
               onChange={e => setNewStudentCampus(e.target.value)}
-              className="modal-input"
+              style={modalInputStyle}
               required
             >
               <option value="">Select a campus</option>
@@ -111,14 +111,14 @@ const AddStudentModal = ({
             )}
           </div>
         </div>
-        <div className="modal-footer">
+        <div style={modalFooterStyle}>
           <button
             onClick={() => setShowStudentModal(false)}
-            className="cancel-button"
+            style={cancelButtonStyle}
           >
             Cancel
           </button>
-          <button onClick={handleAddStudent} className="add-button">
+          <button onClick={handleAddStudent} style={addButtonStyle}>
             Add Student
           </button>
         </div>
