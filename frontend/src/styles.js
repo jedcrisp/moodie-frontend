@@ -22,8 +22,10 @@ export const headerInnerStyle = {
 
 export const brandingStyle = {
   display: 'flex',
-  alignItems: 'center',
-  gap: '1rem',
+  flexDirection: 'column', // Stack vertically
+  alignItems: 'flex-start', // Align to the left
+  gap: '0.5rem',
+  flexWrap: 'wrap',
 };
 
 export const titleStyle = {
@@ -36,7 +38,9 @@ export const titleStyle = {
 
 export const controlsStyle = {
   display: 'flex',
-  gap: '0.75rem',
+  gap: '0.5rem',
+  flexWrap: 'wrap',
+  alignItems: 'center',
 };
 
 export const iconStyle = { width: 20, height: 20 };
@@ -130,6 +134,7 @@ export const searchContainerStyle = {
   display: 'flex',
   alignItems: 'center',
   gap: '0.5rem',
+  width: '100%', // Ensure it takes full width when stacked
 };
 
 export const searchInputStyle = {
