@@ -9,7 +9,7 @@ import AddStudentModal from './AddStudentModal.jsx';
 import AddCounselorModal from './AddCounselorModal.jsx';
 import useStudents from '../hooks/useStudents.js';
 import useSchoolData from '../hooks/useSchoolData.js';
-import './styles.css'; // Import the CSS file
+import { containerStyle, mainStyle, loadingStyle } from './styles.js';
 
 export default function AdminDashboard({ user }) {
   const navigate = useNavigate();
@@ -160,7 +160,7 @@ export default function AdminDashboard({ user }) {
   };
 
   return (
-    <div className="container">
+    <div style={containerStyle}>
       <Navbar
         schoolDisplayName={schoolDisplayName}
         searchQuery={searchQuery}
@@ -176,9 +176,9 @@ export default function AdminDashboard({ user }) {
         setShowStudentModal={setShowStudentModal}
         handleSignOut={handleSignOut}
       />
-      <main className="main">
+      <main style={mainStyle}>
         {loading ? (
-          <div className="loading">Loading...</div>
+          <div style={loadingStyle}>Loading...</div>
         ) : (
           <>
             <AddStudentModal
