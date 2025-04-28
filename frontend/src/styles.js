@@ -298,6 +298,13 @@ export const addButtonStyle = {
 };
 
 // StudentProfile styles (already added previously)
+export const studentInfoGridStyle = {
+  display: 'grid',
+  gap: '0.1rem', // Reduced gap between fields
+  fontSize: '0.875rem',
+  color: '#4B5563',
+};
+
 export const profileContainerStyle = {
   display: 'flex',
   justifyContent: 'center',
@@ -332,6 +339,7 @@ export const profileContentStyle = {
 
 export const infoSectionStyle = {
   padding: '0',
+  borderBottom: '1px solid #E5E7EB',
 };
 
 export const eventsSectionStyle = {
@@ -418,4 +426,11 @@ export const notesTextareaStyle = {
   resize: 'vertical',
   minHeight: '100px',
   width: '100%',
+};
+
+export const eventActionButtonStyle = {
+  background: 'transparent',
+  border: 'none',
+  cursor: 'pointer',
+  marginLeft: '4px',
 };
