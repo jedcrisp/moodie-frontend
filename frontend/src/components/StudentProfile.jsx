@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getFirestore, doc, getDoc, collection, getDocs, addDoc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { ArrowLeft, X, Calendar, UserPlus, Edit, Save, XCircle, Trash2 } from 'lucide-react';
-import { profileContainerStyle, profileCardStyle, profileHeaderStyle, profileContentStyle, infoSectionStyle, eventsSectionStyle, notesSectionStyle, eventsListStyle, eventChipStyle, addEventButtonStyle, editButtonStyle, saveButtonStyle, cancelEditButtonStyle, modalOverlayStyle, modalStyle, modalHeaderStyle, modalBodyStyle, modalFooterStyle, formGroupStyle, labelStyle, modalInputStyle, cancelButtonStyle, addButtonStyle, backButtonStyle, notesTextareaStyle, studentInfoGridStyle, eventActionButtonStyle } from '../styles.js';
+import { profileContainerStyle, profileCardStyle, profileHeaderStyle, profileContentStyle, infoSectionStyle, eventsSectionStyle, notesSectionStyle, eventsListStyle, eventChipStyle, addEventButtonStyle, editButtonStyle, saveButtonStyle, cancelEditButtonStyle, modalOverlayStyle, modalStyle, modalHeaderStyle, modalBodyStyle, modalFooterStyle, formGroupStyle, labelStyle, modalInputStyle, cancelButtonStyle, addButtonStyle, backButtonStyle, notesTextareaStyle, studentInfoGridStyle, eventActionButtonStyle, customPopupOverlayStyle, customPopupStyle, customPopupMessageStyle, customPopupButtonStyle, customPopupCancelButtonStyle } from '../styles.js';
 
 export default function StudentProfile({ user }) {
   const { studentId } = useParams();
@@ -15,11 +15,15 @@ export default function StudentProfile({ user }) {
   const [isEditingEvent, setIsEditingEvent] = useState(false);
   const [currentEventId, setCurrentEventId] = useState(null);
   const [newEventType, setNewEventType] = useState('');
-  const [newEventDate, setNewEventDate] = useState(new Date().toISOString().split('T')[0]); // Initialize with today's date
+  const [newEventDate, setNewEventDate] = useState(new Date().toISOString().split('T')[0]);
   const [newEventNotes, setNewEventNotes] = useState('');
   const [notes, setNotes] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ grade: '', birthday: '', campus: '', email: '' });
+  const [showPopup, setShowPopup] = useState(false);
+  const [popupMessage, setPopupMessage] = useState('');
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [deleteEventId, setDeleteEventId] = useState(null);
 
   const eventTypes = [
     { name: 'Divorce', category: 'emotional' },
@@ -61,12 +65,11 @@ export default function StudentProfile({ user }) {
         );
         const events = eventsSnap.docs.map(doc => {
           const eventData = { id: doc.id, ...doc.data() };
-          // Ensure event.date is a valid Date object
           if (eventData.date && typeof eventData.date.toDate === 'function') {
             eventData.date = eventData.date.toDate();
           } else {
             console.warn(`Invalid date for event ${eventData.id}:`, eventData.date);
-            eventData.date = new Date(); // Fallback to current date
+            eventData.date = new Date();
           }
           return eventData;
         });
@@ -87,18 +90,23 @@ export default function StudentProfile({ user }) {
     fetchStudentData();
   }, [user, studentId, navigate, db]);
 
+  const showCustomPopup = (message) => {
+    setPopupMessage(message);
+    setShowPopup(true);
+  };
+
   const handleAddOrEditEvent = async () => {
     if (!newEventType || !newEventDate) {
-      alert('Please select an event type and date.');
+      showCustomPopup('Please select an event type and date.');
       return;
     }
     const parsedDate = new Date(newEventDate);
     if (isNaN(parsedDate.getTime())) {
-      alert('Please enter a valid date.');
+      showCustomPopup('Please enter a valid date.');
       return;
     }
     if (newEventNotes.length > 100) {
-      alert('Notes cannot exceed 100 characters.');
+      showCustomPopup('Notes cannot exceed 100 characters.');
       return;
     }
     try {
@@ -109,16 +117,14 @@ export default function StudentProfile({ user }) {
         createdAt: serverTimestamp(),
       };
       if (isEditingEvent) {
-        // Edit existing event
         await setDoc(doc(db, 'schools', user.school, 'students', studentId, 'lifeEvents', currentEventId), eventData, { merge: true });
         setLifeEvents(prev =>
           prev.map(event =>
             event.id === currentEventId ? { ...event, ...eventData, date: parsedDate } : event
           )
         );
-        alert('Life event updated successfully.');
+        showCustomPopup('Life event updated successfully.');
       } else {
-        // Add new event
         const eventRef = await addDoc(
           collection(db, 'schools', user.school, 'students', studentId, 'lifeEvents'),
           eventData
@@ -127,7 +133,7 @@ export default function StudentProfile({ user }) {
           { id: eventRef.id, ...eventData, date: parsedDate },
           ...prev,
         ]);
-        alert('Life event added successfully.');
+        showCustomPopup('Life event added successfully.');
       }
       setShowEventModal(false);
       setIsEditingEvent(false);
@@ -137,7 +143,7 @@ export default function StudentProfile({ user }) {
       setNewEventNotes('');
     } catch (err) {
       console.error('Error saving life event:', err);
-      alert('Failed to save life event. Please try again.');
+      showCustomPopup('Failed to save life event. Please try again.');
     }
   };
 
@@ -145,26 +151,30 @@ export default function StudentProfile({ user }) {
     setIsEditingEvent(true);
     setCurrentEventId(event.id);
     setNewEventType(event.type);
-    // Safely convert event.date to YYYY-MM-DD format
     const eventDate = event.date instanceof Date && !isNaN(event.date.getTime())
       ? event.date.toISOString().split('T')[0]
-      : new Date().toISOString().split('T')[0]; // Fallback to today if invalid
+      : new Date().toISOString().split('T')[0];
     setNewEventDate(eventDate);
     setNewEventNotes(event.notes || '');
     setShowEventModal(true);
   };
 
   const handleDeleteEvent = async (eventId) => {
-    if (window.confirm('Are you sure you want to delete this life event?')) {
-      try {
-        await deleteDoc(doc(db, 'schools', user.school, 'students', studentId, 'lifeEvents', eventId));
-        setLifeEvents(prev => prev.filter(event => event.id !== eventId));
-        alert('Life event deleted successfully.');
-      } catch (err) {
-        console.error('Error deleting life event:', err);
-        alert('Failed to delete life event. Please try again.');
-      }
+    setDeleteEventId(eventId);
+    setShowConfirmDelete(true);
+  };
+
+  const confirmDeleteEvent = async () => {
+    try {
+      await deleteDoc(doc(db, 'schools', user.school, 'students', studentId, 'lifeEvents', deleteEventId));
+      setLifeEvents(prev => prev.filter(event => event.id !== deleteEventId));
+      showCustomPopup('Life event deleted successfully.');
+    } catch (err) {
+      console.error('Error deleting life event:', err);
+      showCustomPopup('Failed to delete life event. Please try again.');
     }
+    setShowConfirmDelete(false);
+    setDeleteEventId(null);
   };
 
   const handleSaveNotes = async () => {
@@ -173,10 +183,10 @@ export default function StudentProfile({ user }) {
         content: notes,
         updatedAt: serverTimestamp(),
       });
-      alert('Notes saved successfully.');
+      showCustomPopup('Notes saved successfully.');
     } catch (err) {
       console.error('Error saving notes:', err);
-      alert('Failed to save notes. Please try again.');
+      showCustomPopup('Failed to save notes. Please try again.');
     }
   };
 
@@ -197,10 +207,10 @@ export default function StudentProfile({ user }) {
         email: editForm.email,
       }));
       setIsEditing(false);
-      alert('Student information updated successfully.');
+      showCustomPopup('Student information updated successfully.');
     } catch (err) {
       console.error('Error updating student information:', err);
-      alert('Failed to update student information. Please try again.');
+      showCustomPopup('Failed to update student information. Please try again.');
     }
   };
 
@@ -212,6 +222,45 @@ export default function StudentProfile({ user }) {
 
   return (
     <div style={profileContainerStyle}>
+      {showPopup && (
+        <div style={customPopupOverlayStyle}>
+          <div style={customPopupStyle}>
+            <p style={customPopupMessageStyle}>{popupMessage}</p>
+            <button
+              onClick={() => setShowPopup(false)}
+              style={customPopupButtonStyle}
+              aria-label="Close notification"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showConfirmDelete && (
+        <div style={customPopupOverlayStyle}>
+          <div style={customPopupStyle}>
+            <p style={customPopupMessageStyle}>Are you sure you want to delete this life event?</p>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
+              <button
+                onClick={() => setShowConfirmDelete(false)}
+                style={customPopupCancelButtonStyle}
+                aria-label="Cancel deletion"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteEvent}
+                style={customPopupButtonStyle}
+                aria-label="Confirm deletion"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={profileCardStyle}>
         {showEventModal && (
           <div style={modalOverlayStyle}>
@@ -425,7 +474,7 @@ export default function StudentProfile({ user }) {
                   };
                   const eventDate = event.date instanceof Date && !isNaN(event.date.getTime())
                     ? event.date
-                    : new Date(); // Fallback to current date if invalid
+                    : new Date();
                   return (
                     <div key={event.id} style={{ display: 'flex', alignItems: 'center' }}>
                       <div style={chipStyle}>
