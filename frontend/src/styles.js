@@ -111,6 +111,7 @@ export const backButtonStyle = {
   borderRadius: 9999,
   color: 'white',
   cursor: 'pointer',
+  alignSelf: 'flex-start', // Align button to the start (left)
 };
 
 export const signOutStyle = {
@@ -318,9 +319,9 @@ export const profileCardStyle = {
 
 export const profileHeaderStyle = {
   display: 'flex',
-  alignItems: 'center',
-  gap: '1rem',
-  marginBottom: '1.5rem',
+  flexDirection: 'column', // Stack vertically
+  gap: '0.5rem', // Smaller gap between button and name
+  marginBottom: '1rem',
 };
 
 export const profileContentStyle = {
