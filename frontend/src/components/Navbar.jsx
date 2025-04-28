@@ -68,6 +68,9 @@ const Navbar = ({
               disabled={uploading}
             />
           </label>
+          <button style={downloadButtonStyle} onClick={handleDownloadCsv}>
+            <span>Download CSV</span>
+          </button>
           <button style={addCounselorButtonStyle} onClick={() => setShowCounselorModal(true)}>
             <UserPlus style={{ width: 20, height: 20 }} />
             <span>Add Counselor</span>
@@ -87,9 +90,6 @@ const Navbar = ({
               <span>Mood Selector</span>
             </button>
           )}
-          <button style={downloadButtonStyle} onClick={handleDownloadCsv}>
-            <span>Download CSV</span>
-          </button>
           <button style={signOutStyle} onClick={handleSignOut}>
             <LogOut style={{ width: 20, height: 20 }} />
             <span>Sign Out</span>
