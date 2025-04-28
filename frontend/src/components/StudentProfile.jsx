@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getFirestore, doc, getDoc, collection, getDocs, addDoc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { ArrowLeft, X, Calendar, UserPlus, Edit, Save, XCircle, Trash2 } from 'lucide-react';
-import { profileContainerStyle, profileCardStyle, profileHeaderStyle, profileContentStyle, infoSectionStyle, eventsSectionStyle, notesSectionStyle, eventsListStyle, eventChipStyle, addEventButtonStyle, editButtonStyle, saveButtonStyle, cancelEditButtonStyle, modalOverlayStyle, modalStyle, modalHeaderStyle, modalBodyStyle, modalFooterStyle, formGroupStyle, labelStyle, modalInputStyle, cancelButtonStyle, addButtonStyle, backButtonStyle, notesTextareaStyle, studentInfoGridStyle, eventActionButtonStyle, customPopupOverlayStyle, customPopupStyle, customPopupMessageStyle, customPopupButtonStyle, customPopupCancelButtonStyle } from '../styles.js';
 
 export default function StudentProfile({ user }) {
   const { studentId } = useParams();
@@ -42,7 +41,6 @@ export default function StudentProfile({ user }) {
 
     async function fetchStudentData() {
       try {
-        // Fetch student details
         const studentDoc = await getDoc(doc(db, 'schools', user.school, 'students', studentId));
         if (studentDoc.exists()) {
           const studentData = { id: studentDoc.id, ...studentDoc.data() };
@@ -59,7 +57,6 @@ export default function StudentProfile({ user }) {
           return;
         }
 
-        // Fetch life events
         const eventsSnap = await getDocs(
           collection(db, 'schools', user.school, 'students', studentId, 'lifeEvents')
         );
@@ -76,7 +73,6 @@ export default function StudentProfile({ user }) {
         events.sort((a, b) => b.date - a.date);
         setLifeEvents(events);
 
-        // Fetch notes
         const notesDoc = await getDoc(doc(db, 'schools', user.school, 'students', studentId, 'notes', 'general'));
         if (notesDoc.exists()) {
           setNotes(notesDoc.data().content || '');
@@ -221,14 +217,14 @@ export default function StudentProfile({ user }) {
   );
 
   return (
-    <div style={profileContainerStyle}>
+    <div className="profile-container">
       {showPopup && (
-        <div style={customPopupOverlayStyle}>
-          <div style={customPopupStyle}>
-            <p style={customPopupMessageStyle}>{popupMessage}</p>
+        <div className="custom-popup-overlay">
+          <div className="custom-popup">
+            <p className="custom-popup-message">{popupMessage}</p>
             <button
               onClick={() => setShowPopup(false)}
-              style={customPopupButtonStyle}
+              className="custom-popup-button"
               aria-label="Close notification"
             >
               OK
@@ -238,20 +234,20 @@ export default function StudentProfile({ user }) {
       )}
 
       {showConfirmDelete && (
-        <div style={customPopupOverlayStyle}>
-          <div style={customPopupStyle}>
-            <p style={customPopupMessageStyle}>Are you sure you want to delete this life event?</p>
+        <div className="custom-popup-overlay">
+          <div className="custom-popup">
+            <p className="custom-popup-message">Are you sure you want to delete this life event?</p>
             <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
               <button
                 onClick={() => setShowConfirmDelete(false)}
-                style={customPopupCancelButtonStyle}
+                className="custom-popup-cancel-button"
                 aria-label="Cancel deletion"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmDeleteEvent}
-                style={customPopupButtonStyle}
+                className="custom-popup-button"
                 aria-label="Confirm deletion"
               >
                 OK
@@ -261,11 +257,11 @@ export default function StudentProfile({ user }) {
         </div>
       )}
 
-      <div style={profileCardStyle}>
+      <div className="profile-card">
         {showEventModal && (
-          <div style={modalOverlayStyle}>
-            <div style={modalStyle}>
-              <div style={modalHeaderStyle}>
+          <div className="modal-overlay">
+            <div className="modal">
+              <div className="modal-header">
                 <h3 style={{ fontSize: '1.25rem', fontWeight: 600 }}>{isEditingEvent ? 'Edit Life Event' : 'Add Life Event'}</h3>
                 <button
                   onClick={() => {
@@ -276,19 +272,20 @@ export default function StudentProfile({ user }) {
                     setNewEventDate(new Date().toISOString().split('T')[0]);
                     setNewEventNotes('');
                   }}
+                  className="cancel-button"
                   style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
                   aria-label="Close modal"
                 >
-                  <X style={{ width: 20, height: 20 }} />
+                  <X className="icon" style={{ width: 20, height: 20 }} />
                 </button>
               </div>
-              <div style={modalBodyStyle}>
-                <div style={formGroupStyle}>
-                  <label style={labelStyle}>Event Type *</label>
+              <div className="modal-body">
+                <div className="form-group">
+                  <label className="label">Event Type *</label>
                   <select
                     value={newEventType}
                     onChange={e => setNewEventType(e.target.value)}
-                    style={modalInputStyle}
+                    className="modal-input"
                     required
                   >
                     <option value="">Select an event</option>
@@ -299,32 +296,33 @@ export default function StudentProfile({ user }) {
                     ))}
                   </select>
                 </div>
-                <div style={formGroupStyle}>
-                  <label style={labelStyle}>Date *</label>
+                <div className="form-group">
+                  <label className="label">Date *</label>
                   <div style={{ position: 'relative' }}>
                     <input
                       type="date"
                       value={newEventDate}
                       onChange={e => setNewEventDate(e.target.value)}
-                      style={modalInputStyle}
+                      className="modal-input"
                       required
                     />
                     <Calendar style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: '#4B5563' }} />
                   </div>
                 </div>
-                <div style={formGroupStyle}>
-                  <label style={labelStyle}>Notes (optional, max 100 chars)</label>
+                <div className="form-group">
+                  <label className="label">Notes (optional, max 100 chars)</label>
                   <textarea
                     value={newEventNotes}
                     onChange={e => setNewEventNotes(e.target.value)}
-                    style={{ ...modalInputStyle, resize: 'none', height: '60px' }}
+                    className="modal-input"
+                    style={{ resize: 'none', height: '60px' }}
                     maxLength={100}
                     placeholder="Brief notes..."
                     aria-label="Life event notes"
                   />
                 </div>
               </div>
-              <div style={modalFooterStyle}>
+              <div className="modal-footer">
                 <button onClick={() => {
                   setShowEventModal(false);
                   setIsEditingEvent(false);
@@ -332,10 +330,10 @@ export default function StudentProfile({ user }) {
                   setNewEventType('');
                   setNewEventDate(new Date().toISOString().split('T')[0]);
                   setNewEventNotes('');
-                }} style={cancelButtonStyle} aria-label="Cancel">
+                }} className="cancel-button" aria-label="Cancel">
                   Cancel
                 </button>
-                <button onClick={handleAddOrEditEvent} style={addButtonStyle} aria-label={isEditingEvent ? "Save edited life event" : "Add life event"}>
+                <button onClick={handleAddOrEditEvent} className="add-button" aria-label={isEditingEvent ? "Save edited life event" : "Add life event"}>
                   {isEditingEvent ? 'Save' : 'Add Event'}
                 </button>
               </div>
@@ -343,85 +341,86 @@ export default function StudentProfile({ user }) {
           </div>
         )}
 
-        <div style={profileHeaderStyle}>
-          <button onClick={() => navigate('/admin')} style={backButtonStyle} aria-label="Go back">
-            <ArrowLeft style={{ width: 20, height: 20 }} />
+        <div className="profile-header">
+          <button onClick={() => navigate('/admin')} className="back-button" aria-label="Go back">
+            <ArrowLeft className="icon" style={{ width: 20, height: 20 }} />
             <span>Back</span>
           </button>
           <h2 style={{ fontSize: '1.5rem', fontWeight: 600 }}>{student.name}</h2>
         </div>
-        <div style={profileContentStyle}>
-          <div style={infoSectionStyle}>
+        <div className="profile-content">
+          <div className="info-section">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
               <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#1F2937' }}>Student Info</h3>
               {!isEditing && (
-                <button onClick={() => setIsEditing(true)} style={editButtonStyle} aria-label="Edit student information">
-                  <Edit style={{ width: 16, height: 16 }} />
+                <button onClick={() => setIsEditing(true)} className="edit-button" aria-label="Edit student information">
+                  <Edit className="icon" style={{ width: 16, height: 16 }} />
                   <span>Edit</span>
                 </button>
               )}
             </div>
             {isEditing ? (
               <>
-                <div style={formGroupStyle}>
-                  <label style={{ ...labelStyle, fontSize: '0.75rem' }}>Student ID</label>
+                <div className="form-group">
+                  <label className="label">Student ID</label>
                   <input
                     type="text"
                     value={student.studentId}
                     disabled
-                    style={{ ...modalInputStyle, backgroundColor: '#F3F4F6', fontSize: '0.875rem' }}
+                    className="modal-input"
+                    style={{ backgroundColor: '#F3F4F6' }}
                   />
                 </div>
-                <div style={formGroupStyle}>
-                  <label style={{ ...labelStyle, fontSize: '0.75rem' }}>Grade</label>
+                <div className="form-group">
+                  <label className="label">Grade</label>
                   <input
                     type="text"
                     value={editForm.grade}
                     onChange={e => setEditForm({ ...editForm, grade: e.target.value })}
-                    style={{ ...modalInputStyle, fontSize: '0.875rem' }}
+                    className="modal-input"
                   />
                 </div>
-                <div style={formGroupStyle}>
-                  <label style={{ ...labelStyle, fontSize: '0.75rem' }}>Birthday</label>
+                <div className="form-group">
+                  <label className="label">Birthday</label>
                   <input
                     type="text"
                     value={editForm.birthday}
                     onChange={e => setEditForm({ ...editForm, birthday: e.target.value })}
-                    style={{ ...modalInputStyle, fontSize: '0.875rem' }}
+                    className="modal-input"
                     placeholder="e.g., MM/DD/YYYY"
                   />
                 </div>
-                <div style={formGroupStyle}>
-                  <label style={{ ...labelStyle, fontSize: '0.75rem' }}>Campus</label>
+                <div className="form-group">
+                  <label className="label">Campus</label>
                   <input
                     type="text"
                     value={editForm.campus}
                     onChange={e => setEditForm({ ...editForm, campus: e.target.value })}
-                    style={{ ...modalInputStyle, fontSize: '0.875rem' }}
+                    className="modal-input"
                   />
                 </div>
-                <div style={formGroupStyle}>
-                  <label style={{ ...labelStyle, fontSize: '0.75rem' }}>Email</label>
+                <div className="form-group">
+                  <label className="label">Email</label>
                   <input
                     type="email"
                     value={editForm.email}
                     onChange={e => setEditForm({ ...editForm, email: e.target.value })}
-                    style={{ ...modalInputStyle, fontSize: '0.875rem' }}
+                    className="modal-input"
                   />
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-                  <button onClick={handleEditSave} style={saveButtonStyle} aria-label="Save changes">
-                    <Save style={{ width: 16, height: 16 }} />
+                  <button onClick={handleEditSave} className="save-button" aria-label="Save changes">
+                    <Save className="icon" style={{ width: 16, height: 16 }} />
                     <span>Save</span>
                   </button>
-                  <button onClick={() => setIsEditing(false)} style={cancelEditButtonStyle} aria-label="Cancel editing">
-                    <XCircle style={{ width: 16, height: 16 }} />
+                  <button onClick={() => setIsEditing(false)} className="cancel-edit-button" aria-label="Cancel editing">
+                    <XCircle className="icon" style={{ width: 16, height: 16 }} />
                     <span>Cancel</span>
                   </button>
                 </div>
               </>
             ) : (
-              <div style={studentInfoGridStyle}>
+              <div className="student-info-grid">
                 <p><strong style={{ color: '#1F2937' }}>Student ID:</strong> {student.studentId}</p>
                 <p><strong style={{ color: '#1F2937' }}>Grade:</strong> {student.grade || '—'}</p>
                 <p><strong style={{ color: '#1F2937' }}>Birthday:</strong> {student.birthday || '—'}</p>
@@ -431,24 +430,24 @@ export default function StudentProfile({ user }) {
             )}
           </div>
 
-          <div style={notesSectionStyle}>
+          <div className="notes-section">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
               <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#1F2937' }}>Notes</h3>
-              <button onClick={handleSaveNotes} style={saveButtonStyle} aria-label="Save notes">
-                <Save style={{ width: 16, height: 16 }} />
+              <button onClick={handleSaveNotes} className="save-button" aria-label="Save notes">
+                <Save className="icon" style={{ width: 16, height: 16 }} />
                 <span>Save Notes</span>
               </button>
             </div>
             <textarea
               value={notes}
               onChange={e => setNotes(e.target.value)}
-              style={notesTextareaStyle}
+              className="notes-textarea"
               placeholder="Add general notes about the student..."
               aria-label="General notes about the student"
             />
           </div>
 
-          <div style={eventsSectionStyle}>
+          <div className="events-section">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
               <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#1F2937' }}>Life Events</h3>
               <button onClick={() => {
@@ -458,17 +457,16 @@ export default function StudentProfile({ user }) {
                 setNewEventDate(new Date().toISOString().split('T')[0]);
                 setNewEventNotes('');
                 setShowEventModal(true);
-              }} style={addEventButtonStyle} aria-label="Add a life event">
-                <UserPlus style={{ width: 16, height: 16 }} />
+              }} className="add-event-button" aria-label="Add a life event">
+                <UserPlus className="icon" style={{ width: 16, height: 16 }} />
                 <span>Add Event</span>
               </button>
             </div>
             {lifeEvents.length > 0 ? (
-              <div style={eventsListStyle}>
+              <div className="events-list">
                 {lifeEvents.map(event => {
                   const eventType = eventTypes.find(type => type.name === event.type) || { category: 'other' };
                   const chipStyle = {
-                    ...eventChipStyle,
                     backgroundColor: eventType.category === 'emotional' ? '#FEE2E2' : eventType.category === 'relocation' ? '#DBEAFE' : '#E5E7EB',
                     color: eventType.category === 'emotional' ? '#DC2626' : eventType.category === 'relocation' ? '#2563EB' : '#4B5563',
                   };
@@ -477,23 +475,21 @@ export default function StudentProfile({ user }) {
                     : new Date();
                   return (
                     <div key={event.id} style={{ display: 'flex', alignItems: 'center' }}>
-                      <div style={chipStyle}>
-                        <span style={{ marginRight: '4px' }}>
-                          {eventType.category === 'emotional' ? '❤️' : eventType.category === 'relocation' ? '🏠' : '📅'}
-                        </span>
+                      <div className="event-chip" style={chipStyle}>
+                        <Calendar style={{ width: 14, height: 14, color: eventType.category === 'emotional' ? '#DC2626' : eventType.category === 'relocation' ? '#2563EB' : '#4B5563', marginRight: '4px' }} />
                         {event.type} ({eventDate.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' })})
                         {event.notes && <span style={{ marginLeft: '4px', fontStyle: 'italic' }}>- {event.notes}</span>}
                       </div>
                       <button
                         onClick={() => handleEditEvent(event)}
-                        style={eventActionButtonStyle}
+                        className="event-action-button"
                         aria-label={`Edit life event: ${event.type}`}
                       >
                         <Edit style={{ width: 16, height: 16, color: '#3B82F6' }} />
                       </button>
                       <button
                         onClick={() => handleDeleteEvent(event.id)}
-                        style={eventActionButtonStyle}
+                        className="event-action-button"
                         aria-label={`Delete life event: ${event.type}`}
                       >
                         <Trash2 style={{ width: 16, height: 16, color: '#EF4444' }} />
