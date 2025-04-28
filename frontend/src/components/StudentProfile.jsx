@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getFirestore, doc, getDoc, collection, getDocs, addDoc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { ArrowLeft, X, Calendar, UserPlus, Edit, Save, XCircle, Trash2 } from 'lucide-react';
+import { profileContainerStyle, profileCardStyle, profileHeaderStyle, profileContentStyle, infoSectionStyle, eventsSectionStyle, notesSectionStyle, eventsListStyle, eventChipStyle, addEventButtonStyle, editButtonStyle, saveButtonStyle, cancelEditButtonStyle, modalOverlayStyle, modalStyle, modalHeaderStyle, modalBodyStyle, modalFooterStyle, formGroupStyle, labelStyle, modalInputStyle, cancelButtonStyle, addButtonStyle, backButtonStyle, notesTextareaStyle, studentInfoGridStyle, eventActionButtonStyle, customPopupOverlayStyle, customPopupStyle, customPopupMessageStyle, customPopupButtonStyle, customPopupCancelButtonStyle } from '../styles.js';
 
 export default function StudentProfile({ user }) {
   const { studentId } = useParams();
@@ -211,20 +212,20 @@ export default function StudentProfile({ user }) {
   };
 
   if (!student) return (
-    <div className="h-screen flex items-center justify-center bg-gradient-to-br from-rose-200 to-blue-200">
-      <p className="text-2xl text-purple-700" aria-live="polite">Loading student data…</p>
+    <div style={profileContainerStyle}>
+      <p style={{ fontSize: '2rem', color: '#7C3AED' }} aria-live="polite">Loading student data…</p>
     </div>
   );
 
   return (
-    <div className="profile-container">
+    <div style={profileContainerStyle}>
       {showPopup && (
-        <div className="custom-popup-overlay">
-          <div className="custom-popup">
-            <p className="custom-popup-message">{popupMessage}</p>
+        <div style={customPopupOverlayStyle}>
+          <div style={customPopupStyle}>
+            <p style={customPopupMessageStyle}>{popupMessage}</p>
             <button
               onClick={() => setShowPopup(false)}
-              className="custom-popup-button"
+              style={customPopupButtonStyle}
               aria-label="Close notification"
             >
               OK
@@ -234,20 +235,20 @@ export default function StudentProfile({ user }) {
       )}
 
       {showConfirmDelete && (
-        <div className="custom-popup-overlay">
-          <div className="custom-popup">
-            <p className="custom-popup-message">Are you sure you want to delete this life event?</p>
+        <div style={customPopupOverlayStyle}>
+          <div style={customPopupStyle}>
+            <p style={customPopupMessageStyle}>Are you sure you want to delete this life event?</p>
             <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
               <button
                 onClick={() => setShowConfirmDelete(false)}
-                className="custom-popup-cancel-button"
+                style={customPopupCancelButtonStyle}
                 aria-label="Cancel deletion"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmDeleteEvent}
-                className="custom-popup-button"
+                style={customPopupButtonStyle}
                 aria-label="Confirm deletion"
               >
                 OK
@@ -257,11 +258,11 @@ export default function StudentProfile({ user }) {
         </div>
       )}
 
-      <div className="profile-card">
+      <div style={profileCardStyle}>
         {showEventModal && (
-          <div className="modal-overlay">
-            <div className="modal">
-              <div className="modal-header">
+          <div style={modalOverlayStyle}>
+            <div style={modalStyle}>
+              <div style={modalHeaderStyle}>
                 <h3 style={{ fontSize: '1.25rem', fontWeight: 600 }}>{isEditingEvent ? 'Edit Life Event' : 'Add Life Event'}</h3>
                 <button
                   onClick={() => {
@@ -272,20 +273,19 @@ export default function StudentProfile({ user }) {
                     setNewEventDate(new Date().toISOString().split('T')[0]);
                     setNewEventNotes('');
                   }}
-                  className="cancel-button"
                   style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
                   aria-label="Close modal"
                 >
-                  <X className="icon" style={{ width: 20, height: 20 }} />
+                  <X style={iconStyle} />
                 </button>
               </div>
-              <div className="modal-body">
-                <div className="form-group">
-                  <label className="label">Event Type *</label>
+              <div style={modalBodyStyle}>
+                <div style={formGroupStyle}>
+                  <label style={labelStyle}>Event Type *</label>
                   <select
                     value={newEventType}
                     onChange={e => setNewEventType(e.target.value)}
-                    className="modal-input"
+                    style={modalInputStyle}
                     required
                   >
                     <option value="">Select an event</option>
@@ -296,33 +296,32 @@ export default function StudentProfile({ user }) {
                     ))}
                   </select>
                 </div>
-                <div className="form-group">
-                  <label className="label">Date *</label>
+                <div style={formGroupStyle}>
+                  <label style={labelStyle}>Date *</label>
                   <div style={{ position: 'relative' }}>
                     <input
                       type="date"
                       value={newEventDate}
                       onChange={e => setNewEventDate(e.target.value)}
-                      className="modal-input"
+                      style={modalInputStyle}
                       required
                     />
                     <Calendar style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: '#4B5563' }} />
                   </div>
                 </div>
-                <div className="form-group">
-                  <label className="label">Notes (optional, max 100 chars)</label>
+                <div style={formGroupStyle}>
+                  <label style={labelStyle}>Notes (optional, max 100 chars)</label>
                   <textarea
                     value={newEventNotes}
                     onChange={e => setNewEventNotes(e.target.value)}
-                    className="modal-input"
-                    style={{ resize: 'none', height: '60px' }}
+                    style={{ ...modalInputStyle, resize: 'none', height: '60px' }}
                     maxLength={100}
                     placeholder="Brief notes..."
                     aria-label="Life event notes"
                   />
                 </div>
               </div>
-              <div className="modal-footer">
+              <div style={modalFooterStyle}>
                 <button onClick={() => {
                   setShowEventModal(false);
                   setIsEditingEvent(false);
@@ -330,10 +329,10 @@ export default function StudentProfile({ user }) {
                   setNewEventType('');
                   setNewEventDate(new Date().toISOString().split('T')[0]);
                   setNewEventNotes('');
-                }} className="cancel-button" aria-label="Cancel">
+                }} style={cancelButtonStyle} aria-label="Cancel">
                   Cancel
                 </button>
-                <button onClick={handleAddOrEditEvent} className="add-button" aria-label={isEditingEvent ? "Save edited life event" : "Add life event"}>
+                <button onClick={handleAddOrEditEvent} style={addButtonStyle} aria-label={isEditingEvent ? "Save edited life event" : "Add life event"}>
                   {isEditingEvent ? 'Save' : 'Add Event'}
                 </button>
               </div>
@@ -341,86 +340,85 @@ export default function StudentProfile({ user }) {
           </div>
         )}
 
-        <div className="profile-header">
-          <button onClick={() => navigate('/admin')} className="back-button" aria-label="Go back">
-            <ArrowLeft className="icon" style={{ width: 20, height: 20 }} />
+        <div style={profileHeaderStyle}>
+          <button onClick={() => navigate('/admin')} style={backButtonStyle} aria-label="Go back">
+            <ArrowLeft style={iconStyle} />
             <span>Back</span>
           </button>
           <h2 style={{ fontSize: '1.5rem', fontWeight: 600 }}>{student.name}</h2>
         </div>
-        <div className="profile-content">
-          <div className="info-section">
+        <div style={profileContentStyle}>
+          <div style={infoSectionStyle}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
               <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#1F2937' }}>Student Info</h3>
               {!isEditing && (
-                <button onClick={() => setIsEditing(true)} className="edit-button" aria-label="Edit student information">
-                  <Edit className="icon" style={{ width: 16, height: 16 }} />
+                <button onClick={() => setIsEditing(true)} style={editButtonStyle} aria-label="Edit student information">
+                  <Edit style={{ width: 16, height: 16 }} />
                   <span>Edit</span>
                 </button>
               )}
             </div>
             {isEditing ? (
               <>
-                <div className="form-group">
-                  <label className="label">Student ID</label>
+                <div style={formGroupStyle}>
+                  <label style={labelStyle}>Student ID</label>
                   <input
                     type="text"
                     value={student.studentId}
                     disabled
-                    className="modal-input"
-                    style={{ backgroundColor: '#F3F4F6' }}
+                    style={{ ...modalInputStyle, backgroundColor: '#F3F4F6' }}
                   />
                 </div>
-                <div className="form-group">
-                  <label className="label">Grade</label>
+                <div style={formGroupStyle}>
+                  <label style={labelStyle}>Grade</label>
                   <input
                     type="text"
                     value={editForm.grade}
                     onChange={e => setEditForm({ ...editForm, grade: e.target.value })}
-                    className="modal-input"
+                    style={modalInputStyle}
                   />
                 </div>
-                <div className="form-group">
-                  <label className="label">Birthday</label>
+                <div style={formGroupStyle}>
+                  <label style={labelStyle}>Birthday</label>
                   <input
                     type="text"
                     value={editForm.birthday}
                     onChange={e => setEditForm({ ...editForm, birthday: e.target.value })}
-                    className="modal-input"
+                    style={modalInputStyle}
                     placeholder="e.g., MM/DD/YYYY"
                   />
                 </div>
-                <div className="form-group">
-                  <label className="label">Campus</label>
+                <div style={formGroupStyle}>
+                  <label style={labelStyle}>Campus</label>
                   <input
                     type="text"
                     value={editForm.campus}
                     onChange={e => setEditForm({ ...editForm, campus: e.target.value })}
-                    className="modal-input"
+                    style={modalInputStyle}
                   />
                 </div>
-                <div className="form-group">
-                  <label className="label">Email</label>
+                <div style={formGroupStyle}>
+                  <label style={labelStyle}>Email</label>
                   <input
                     type="email"
                     value={editForm.email}
                     onChange={e => setEditForm({ ...editForm, email: e.target.value })}
-                    className="modal-input"
+                    style={modalInputStyle}
                   />
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-                  <button onClick={handleEditSave} className="save-button" aria-label="Save changes">
-                    <Save className="icon" style={{ width: 16, height: 16 }} />
+                  <button onClick={handleEditSave} style={saveButtonStyle} aria-label="Save changes">
+                    <Save style={{ width: 16, height: 16 }} />
                     <span>Save</span>
                   </button>
-                  <button onClick={() => setIsEditing(false)} className="cancel-edit-button" aria-label="Cancel editing">
-                    <XCircle className="icon" style={{ width: 16, height: 16 }} />
+                  <button onClick={() => setIsEditing(false)} style={cancelEditButtonStyle} aria-label="Cancel editing">
+                    <XCircle style={{ width: 16, height: 16 }} />
                     <span>Cancel</span>
                   </button>
                 </div>
               </>
             ) : (
-              <div className="student-info-grid">
+              <div style={studentInfoGridStyle}>
                 <p><strong style={{ color: '#1F2937' }}>Student ID:</strong> {student.studentId}</p>
                 <p><strong style={{ color: '#1F2937' }}>Grade:</strong> {student.grade || '—'}</p>
                 <p><strong style={{ color: '#1F2937' }}>Birthday:</strong> {student.birthday || '—'}</p>
@@ -430,24 +428,24 @@ export default function StudentProfile({ user }) {
             )}
           </div>
 
-          <div className="notes-section">
+          <div style={notesSectionStyle}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
               <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#1F2937' }}>Notes</h3>
-              <button onClick={handleSaveNotes} className="save-button" aria-label="Save notes">
-                <Save className="icon" style={{ width: 16, height: 16 }} />
+              <button onClick={handleSaveNotes} style={saveButtonStyle} aria-label="Save notes">
+                <Save style={{ width: 16, height: 16 }} />
                 <span>Save Notes</span>
               </button>
             </div>
             <textarea
               value={notes}
               onChange={e => setNotes(e.target.value)}
-              className="notes-textarea"
+              style={notesTextareaStyle}
               placeholder="Add general notes about the student..."
               aria-label="General notes about the student"
             />
           </div>
 
-          <div className="events-section">
+          <div style={eventsSectionStyle}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
               <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#1F2937' }}>Life Events</h3>
               <button onClick={() => {
@@ -457,16 +455,17 @@ export default function StudentProfile({ user }) {
                 setNewEventDate(new Date().toISOString().split('T')[0]);
                 setNewEventNotes('');
                 setShowEventModal(true);
-              }} className="add-event-button" aria-label="Add a life event">
-                <UserPlus className="icon" style={{ width: 16, height: 16 }} />
+              }} style={addEventButtonStyle} aria-label="Add a life event">
+                <UserPlus style={{ width: 16, height: 16 }} />
                 <span>Add Event</span>
               </button>
             </div>
             {lifeEvents.length > 0 ? (
-              <div className="events-list">
+              <div style={eventsListStyle}>
                 {lifeEvents.map(event => {
                   const eventType = eventTypes.find(type => type.name === event.type) || { category: 'other' };
                   const chipStyle = {
+                    ...eventChipStyle,
                     backgroundColor: eventType.category === 'emotional' ? '#FEE2E2' : eventType.category === 'relocation' ? '#DBEAFE' : '#E5E7EB',
                     color: eventType.category === 'emotional' ? '#DC2626' : eventType.category === 'relocation' ? '#2563EB' : '#4B5563',
                   };
@@ -475,21 +474,21 @@ export default function StudentProfile({ user }) {
                     : new Date();
                   return (
                     <div key={event.id} style={{ display: 'flex', alignItems: 'center' }}>
-                      <div className="event-chip" style={chipStyle}>
+                      <div style={chipStyle}>
                         <Calendar style={{ width: 14, height: 14, color: eventType.category === 'emotional' ? '#DC2626' : eventType.category === 'relocation' ? '#2563EB' : '#4B5563', marginRight: '4px' }} />
                         {event.type} ({eventDate.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' })})
                         {event.notes && <span style={{ marginLeft: '4px', fontStyle: 'italic' }}>- {event.notes}</span>}
                       </div>
                       <button
                         onClick={() => handleEditEvent(event)}
-                        className="event-action-button"
+                        style={eventActionButtonStyle}
                         aria-label={`Edit life event: ${event.type}`}
                       >
                         <Edit style={{ width: 16, height: 16, color: '#3B82F6' }} />
                       </button>
                       <button
                         onClick={() => handleDeleteEvent(event.id)}
-                        className="event-action-button"
+                        style={eventActionButtonStyle}
                         aria-label={`Delete life event: ${event.type}`}
                       >
                         <Trash2 style={{ width: 16, height: 16, color: '#EF4444' }} />
