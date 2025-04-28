@@ -16,18 +16,17 @@ export const headerStyle = {
 
 export const headerInnerStyle = {
   display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  flexWrap: 'wrap',
-  gap: '0.5rem',
+  flexDirection: 'column', // Stack branding and controls vertically
+  alignItems: 'stretch', // Stretch children to fill width
+  gap: '1rem',
 };
 
 export const brandingStyle = {
   display: 'flex',
   flexDirection: 'column',
-  alignItems: 'flex-start',
+  alignItems: 'center', // Center the title, search bar, and dropdown
   gap: '0.5rem',
-  flexWrap: 'wrap',
+  width: '100%', // Ensure it takes full width
 };
 
 export const titleStyle = {
@@ -40,9 +39,10 @@ export const titleStyle = {
 
 export const controlsStyle = {
   display: 'flex',
+  justifyContent: 'center', // Center the buttons
   gap: '0.5rem',
   flexWrap: 'wrap',
-  alignItems: 'center',
+  width: '100%',
 };
 
 export const iconStyle = { width: 20, height: 20 };
@@ -133,16 +133,19 @@ export const signOutStyle = {
 
 export const searchContainerStyle = {
   display: 'flex',
+  justifyContent: 'center', // Center the search bar and dropdown
   alignItems: 'center',
   gap: '0.5rem',
-  width: '100%',
+  width: '100%', // Ensure it takes full width
+  flexWrap: 'wrap', // Allow wrapping on smaller screens
 };
 
 export const searchInputStyle = {
   padding: '0.5rem 1rem',
   border: '1px solid #D1D5DB',
   borderRadius: '9999px',
-  width: '150px',
+  width: '200px', // Slightly wider to match TestSchool
+  maxWidth: '100%',
 };
 
 export const campusSelectorStyle = {
@@ -152,6 +155,8 @@ export const campusSelectorStyle = {
   backgroundColor: 'white',
   cursor: 'pointer',
   fontSize: '0.875rem',
+  width: '200px', // Match the search bar width
+  maxWidth: '100%',
 };
 
 export const mainStyle = { 
