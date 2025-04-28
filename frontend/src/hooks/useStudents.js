@@ -1,6 +1,7 @@
 // frontend/src/hooks/useStudents.js
 import { useState, useEffect, useMemo } from 'react';
-import { getFirestore, collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, deleteDoc, doc, getDoc } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 import { tooltipTextStyle } from '../styles.js';
 
 export default function useStudents(db, user, defaultCampus) {
@@ -8,9 +9,50 @@ export default function useStudents(db, user, defaultCampus) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCampus, setSelectedCampus] = useState(defaultCampus || '');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const fetchStudents = async () => {
-    if (!user || !user.school) return;
+    if (!user || !user.school) {
+      console.error('User or user.school is undefined:', user);
+      setError('User or school not defined');
+      setLoading(false);
+      return;
+    }
+
+    console.log('Fetching students for user:', user);
+
+    // Get the user's email from Firebase Auth
+    const auth = getAuth();
+    const currentUser = auth.currentUser;
+    const userEmail = currentUser ? currentUser.email : 'unknown';
+    console.log('User email:', userEmail);
+
+    // Check Condition 1: User role document
+    try {
+      const userDocRef = doc(db, 'schools', user.school, 'users', user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+      if (userDocSnap.exists()) {
+        console.log('User role document:', userDocSnap.data());
+      } else {
+        console.log('User role document does not exist at:', userDocRef.path);
+      }
+    } catch (err) {
+      console.error('Error checking user role document:', err);
+    }
+
+    // Check Condition 2: Counselor document by email
+    try {
+      const counselorDocRef = doc(db, 'schools', user.school, 'counselors', userEmail);
+      const counselorDocSnap = await getDoc(counselorDocRef);
+      if (counselorDocSnap.exists()) {
+        console.log('Counselor document by email exists:', counselorDocSnap.data());
+      } else {
+        console.log('Counselor document does not exist at:', counselorDocRef.path);
+      }
+    } catch (err) {
+      console.error('Error checking counselor document by email:', err);
+    }
+
     setLoading(true);
     try {
       const studentsSnap = await getDocs(collection(db, 'schools', user.school, 'students'));
@@ -47,8 +89,11 @@ export default function useStudents(db, user, defaultCampus) {
       });
 
       setStudents(studentsWithMoodsAndEvents);
+      setError(null);
     } catch (err) {
       console.error('Error fetching students:', err);
+      setError('Failed to fetch students: ' + err.message);
+      setStudents([]);
     } finally {
       setLoading(false);
     }
@@ -57,6 +102,17 @@ export default function useStudents(db, user, defaultCampus) {
   useEffect(() => {
     fetchStudents();
   }, [user, db]);
+
+  const deleteStudent = async (studentId) => {
+    if (!studentId) return;
+    try {
+      await deleteDoc(doc(db, 'schools', user.school, 'students', studentId));
+      await fetchStudents();
+    } catch (err) {
+      console.error('Error deleting student:', err);
+      setError('Failed to delete student: ' + err.message);
+    }
+  };
 
   const filteredStudents = useMemo(() => {
     return students.filter(student => {
@@ -75,14 +131,7 @@ export default function useStudents(db, user, defaultCampus) {
     setSelectedCampus,
     loading,
     fetchStudents,
-    deleteStudent: async (studentId) => {
-      if (!studentId) return;
-      try {
-        await deleteDoc(doc(db, 'schools', user.school, 'students', studentId));
-        await fetchStudents();
-      } catch (err) {
-        console.error('Error deleting student:', err);
-      }
-    },
+    deleteStudent,
+    error,
   };
 }
