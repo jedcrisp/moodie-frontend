@@ -15,7 +15,7 @@ export const headerStyle = {
 
 export const headerInnerStyle = {
   display: 'flex',
-  flexDirection: 'column',
+  flexDirection: 'space-between',
   alignItems: 'stretch',
   gap: '1rem',
 };
