@@ -1,7 +1,6 @@
 // frontend/src/hooks/useStudents.js
 import { useState, useEffect, useMemo } from 'react';
-import { getFirestore, collection, getDocs, deleteDoc, doc, getDoc } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
+import { getFirestore, collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { tooltipTextStyle } from '../styles.js';
 
 export default function useStudents(db, user, defaultCampus) {
@@ -9,53 +8,11 @@ export default function useStudents(db, user, defaultCampus) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCampus, setSelectedCampus] = useState(defaultCampus || '');
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [tokenClaims, setTokenClaims] = useState(null);
-
-  // Separate useEffect for token refresh
-  useEffect(() => {
-    const auth = getAuth();
-    const currentUser = auth.currentUser;
-    if (currentUser) {
-      currentUser.getIdTokenResult(true).then(tokenResult => {
-        console.log('Token claims:', tokenResult.claims);
-        console.log('Token email (request.auth.token.email):', tokenResult.claims.email);
-        console.log('Token UID (request.auth.uid):', tokenResult.claims.sub);
-        setTokenClaims(tokenResult.claims);
-      }).catch(err => {
-        console.error('Error getting token claims:', err);
-      });
-    }
-  }, []);
 
   const fetchStudents = async () => {
-    if (!user || !user.school) {
-      setError('User or school not defined');
-      setLoading(false);
-      return;
-    }
-
+    if (!user || !user.school) return;
     setLoading(true);
     try {
-      const userDocRef = doc(db, 'schools', user.school, 'users', user.uid);
-      const userDocSnap = await getDoc(userDocRef);
-      if (userDocSnap.exists()) {
-        console.log('User role document:', userDocSnap.data());
-      } else {
-        console.log('User role document does not exist at:', userDocRef.path);
-      }
-
-      const auth = getAuth();
-      const currentUser = auth.currentUser;
-      const userEmail = currentUser ? currentUser.email : 'unknown';
-      const counselorDocRef = doc(db, 'schools', user.school, 'counselors', userEmail);
-      const counselorDocSnap = await getDoc(counselorDocRef);
-      if (counselorDocSnap.exists()) {
-        console.log('Counselor document by email exists:', counselorDocSnap.data());
-      } else {
-        console.log('Counselor document does not exist at:', counselorDocRef.path);
-      }
-
       const studentsSnap = await getDocs(collection(db, 'schools', user.school, 'students'));
       const moodsSnap = await getDocs(collection(db, 'schools', user.school, 'moods'));
       const eventsSnap = await getDocs(collection(db, 'schools', user.school, 'lifeEvents'));
@@ -90,11 +47,8 @@ export default function useStudents(db, user, defaultCampus) {
       });
 
       setStudents(studentsWithMoodsAndEvents);
-      setError(null);
     } catch (err) {
       console.error('Error fetching students:', err);
-      setError('Failed to fetch students: ' + err.message);
-      setStudents([]);
     } finally {
       setLoading(false);
     }
@@ -128,10 +82,7 @@ export default function useStudents(db, user, defaultCampus) {
         await fetchStudents();
       } catch (err) {
         console.error('Error deleting student:', err);
-        setError('Failed to delete student: ' + err.message);
       }
     },
-    error,
-    tokenClaims,
   };
 }
