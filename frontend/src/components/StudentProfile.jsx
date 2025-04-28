@@ -1,9 +1,9 @@
 // frontend/src/components/StudentProfile.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getFirestore, doc, getDoc, collection, getDocs, addDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { ArrowLeft, X, Calendar, UserPlus, Edit, Save, XCircle } from 'lucide-react';
-import { profileContainerStyle, profileCardStyle, profileHeaderStyle, profileContentStyle, infoSectionStyle, eventsSectionStyle, notesSectionStyle, eventsListStyle, eventChipStyle, addEventButtonStyle, editButtonStyle, saveButtonStyle, cancelEditButtonStyle, modalOverlayStyle, modalStyle, modalHeaderStyle, modalBodyStyle, modalFooterStyle, formGroupStyle, labelStyle, modalInputStyle, cancelButtonStyle, addButtonStyle, backButtonStyle, notesTextareaStyle } from '../styles.js';
+import { getFirestore, doc, getDoc, collection, getDocs, addDoc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { ArrowLeft, X, Calendar, UserPlus, Edit, Save, XCircle, Trash2 } from 'lucide-react';
+import { profileContainerStyle, profileCardStyle, profileHeaderStyle, profileContentStyle, infoSectionStyle, eventsSectionStyle, notesSectionStyle, eventsListStyle, eventChipStyle, addEventButtonStyle, editButtonStyle, saveButtonStyle, cancelEditButtonStyle, modalOverlayStyle, modalStyle, modalHeaderStyle, modalBodyStyle, modalFooterStyle, formGroupStyle, labelStyle, modalInputStyle, cancelButtonStyle, addButtonStyle, backButtonStyle, notesTextareaStyle, studentInfoGridStyle, eventActionButtonStyle } from '../styles.js';
 
 export default function StudentProfile({ user }) {
   const { studentId } = useParams();
@@ -12,6 +12,8 @@ export default function StudentProfile({ user }) {
   const [student, setStudent] = useState(null);
   const [lifeEvents, setLifeEvents] = useState([]);
   const [showEventModal, setShowEventModal] = useState(false);
+  const [isEditingEvent, setIsEditingEvent] = useState(false);
+  const [currentEventId, setCurrentEventId] = useState(null);
   const [newEventType, setNewEventType] = useState('');
   const [newEventDate, setNewEventDate] = useState(new Date().toISOString().split('T')[0]);
   const [newEventNotes, setNewEventNotes] = useState('');
@@ -75,7 +77,7 @@ export default function StudentProfile({ user }) {
     fetchStudentData();
   }, [user, studentId, navigate, db]);
 
-  const handleAddEvent = async () => {
+  const handleAddOrEditEvent = async () => {
     if (!newEventType || !newEventDate) {
       alert('Please select an event type and date.');
       return;
@@ -91,21 +93,58 @@ export default function StudentProfile({ user }) {
         notes: newEventNotes.trim(),
         createdAt: serverTimestamp(),
       };
-      const eventRef = await addDoc(
-        collection(db, 'schools', user.school, 'students', studentId, 'lifeEvents'),
-        eventData
-      );
-      setLifeEvents(prev => [
-        { id: eventRef.id, ...eventData, date: new Date(newEventDate) },
-        ...prev,
-      ]);
+      if (isEditingEvent) {
+        // Edit existing event
+        await setDoc(doc(db, 'schools', user.school, 'students', studentId, 'lifeEvents', currentEventId), eventData, { merge: true });
+        setLifeEvents(prev =>
+          prev.map(event =>
+            event.id === currentEventId ? { ...event, ...eventData, date: new Date(newEventDate) } : event
+          )
+        );
+        alert('Life event updated successfully.');
+      } else {
+        // Add new event
+        const eventRef = await addDoc(
+          collection(db, 'schools', user.school, 'students', studentId, 'lifeEvents'),
+          eventData
+        );
+        setLifeEvents(prev => [
+          { id: eventRef.id, ...eventData, date: new Date(newEventDate) },
+          ...prev,
+        ]);
+        alert('Life event added successfully.');
+      }
       setShowEventModal(false);
+      setIsEditingEvent(false);
+      setCurrentEventId(null);
       setNewEventType('');
       setNewEventDate(new Date().toISOString().split('T')[0]);
       setNewEventNotes('');
     } catch (err) {
-      console.error('Error adding life event:', err);
-      alert('Failed to add life event. Please try again.');
+      console.error('Error saving life event:', err);
+      alert('Failed to save life event. Please try again.');
+    }
+  };
+
+  const handleEditEvent = (event) => {
+    setIsEditingEvent(true);
+    setCurrentEventId(event.id);
+    setNewEventType(event.type);
+    setNewEventDate(new Date(event.date).toISOString().split('T')[0]);
+    setNewEventNotes(event.notes || '');
+    setShowEventModal(true);
+  };
+
+  const handleDeleteEvent = async (eventId) => {
+    if (window.confirm('Are you sure you want to delete this life event?')) {
+      try {
+        await deleteDoc(doc(db, 'schools', user.school, 'students', studentId, 'lifeEvents', eventId));
+        setLifeEvents(prev => prev.filter(event => event.id !== eventId));
+        alert('Life event deleted successfully.');
+      } catch (err) {
+        console.error('Error deleting life event:', err);
+        alert('Failed to delete life event. Please try again.');
+      }
     }
   };
 
@@ -159,9 +198,16 @@ export default function StudentProfile({ user }) {
           <div style={modalOverlayStyle}>
             <div style={modalStyle}>
               <div style={modalHeaderStyle}>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Add Life Event</h3>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 600 }}>{isEditingEvent ? 'Edit Life Event' : 'Add Life Event'}</h3>
                 <button
-                  onClick={() => setShowEventModal(false)}
+                  onClick={() => {
+                    setShowEventModal(false);
+                    setIsEditingEvent(false);
+                    setCurrentEventId(null);
+                    setNewEventType('');
+                    setNewEventDate(new Date().toISOString().split('T')[0]);
+                    setNewEventNotes('');
+                  }}
                   style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
                   aria-label="Close modal"
                 >
@@ -211,11 +257,18 @@ export default function StudentProfile({ user }) {
                 </div>
               </div>
               <div style={modalFooterStyle}>
-                <button onClick={() => setShowEventModal(false)} style={cancelButtonStyle} aria-label="Cancel">
+                <button onClick={() => {
+                  setShowEventModal(false);
+                  setIsEditingEvent(false);
+                  setCurrentEventId(null);
+                  setNewEventType('');
+                  setNewEventDate(new Date().toISOString().split('T')[0]);
+                  setNewEventNotes('');
+                }} style={cancelButtonStyle} aria-label="Cancel">
                   Cancel
                 </button>
-                <button onClick={handleAddEvent} style={addButtonStyle} aria-label="Add life event">
-                  Add Event
+                <button onClick={handleAddOrEditEvent} style={addButtonStyle} aria-label={isEditingEvent ? "Save edited life event" : "Add life event"}>
+                  {isEditingEvent ? 'Save' : 'Add Event'}
                 </button>
               </div>
             </div>
@@ -227,7 +280,7 @@ export default function StudentProfile({ user }) {
             <ArrowLeft style={{ width: 20, height: 20 }} />
             <span>Back</span>
           </button>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 600 }}>{student.name}</h2> {/* Increased font size */}
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 600 }}>{student.name}</h2>
         </div>
         <div style={profileContentStyle}>
           <div style={infoSectionStyle}>
@@ -300,7 +353,7 @@ export default function StudentProfile({ user }) {
                 </div>
               </>
             ) : (
-              <div style={{ display: 'grid', gap: '0.25rem', fontSize: '0.875rem', color: '#4B5563' }}>
+              <div style={studentInfoGridStyle}>
                 <p><strong style={{ color: '#1F2937' }}>Student ID:</strong> {student.studentId}</p>
                 <p><strong style={{ color: '#1F2937' }}>Grade:</strong> {student.grade || '—'}</p>
                 <p><strong style={{ color: '#1F2937' }}>Birthday:</strong> {student.birthday || '—'}</p>
@@ -330,7 +383,14 @@ export default function StudentProfile({ user }) {
           <div style={eventsSectionStyle}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
               <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#1F2937' }}>Life Events</h3>
-              <button onClick={() => setShowEventModal(true)} style={addEventButtonStyle} aria-label="Add a life event">
+              <button onClick={() => {
+                setIsEditingEvent(false);
+                setCurrentEventId(null);
+                setNewEventType('');
+                setNewEventDate(new Date().toISOString().split('T')[0]);
+                setNewEventNotes('');
+                setShowEventModal(true);
+              }} style={addEventButtonStyle} aria-label="Add a life event">
                 <UserPlus style={{ width: 16, height: 16 }} />
                 <span>Add Event</span>
               </button>
@@ -345,12 +405,28 @@ export default function StudentProfile({ user }) {
                     color: eventType.category === 'emotional' ? '#DC2626' : eventType.category === 'relocation' ? '#2563EB' : '#4B5563',
                   };
                   return (
-                    <div key={event.id} style={chipStyle}>
-                      <span style={{ marginRight: '4px' }}>
-                        {eventType.category === 'emotional' ? '❤️' : eventType.category === 'relocation' ? '🏠' : '📅'}
-                      </span>
-                      {event.type} ({new Date(event.date).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' })})
-                      {event.notes && <span style={{ marginLeft: '4px', fontStyle: 'italic' }}>- {event.notes}</span>}
+                    <div key={event.id} style={{ display: 'flex', alignItems: 'center' }}>
+                      <div style={chipStyle}>
+                        <span style={{ marginRight: '4px' }}>
+                          {eventType.category === 'emotional' ? '❤️' : eventType.category === 'relocation' ? '🏠' : '📅'}
+                        </span>
+                        {event.type} ({new Date(event.date).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' })})
+                        {event.notes && <span style={{ marginLeft: '4px', fontStyle: 'italic' }}>- {event.notes}</span>}
+                      </div>
+                      <button
+                        onClick={() => handleEditEvent(event)}
+                        style={eventActionButtonStyle}
+                        aria-label={`Edit life event: ${event.type}`}
+                      >
+                        <Edit style={{ width: 16, height: 16, color: '#3B82F6' }} />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteEvent(event.id)}
+                        style={eventActionButtonStyle}
+                        aria-label={`Delete life event: ${event.type}`}
+                      >
+                        <Trash2 style={{ width: 16, height: 16, color: '#EF4444' }} />
+                      </button>
                     </div>
                   );
                 })}
