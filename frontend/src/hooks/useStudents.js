@@ -5,19 +5,28 @@ import { getAuth } from 'firebase/auth';
 import { tooltipTextStyle } from '../styles.js';
 
 export default function useStudents(db, user, defaultCampus) {
-  const [students, setStudents] = useState([]);
+  const [students, setStudents] = useState(null); // Initialize as null to indicate uninitialized state
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCampus, setSelectedCampus] = useState(defaultCampus || '');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [tokenClaims, setTokenClaims] = useState(null);
-  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     const initialize = async () => {
-      // Step 1: Refresh token and log claims
+      if (!user || !user.school) {
+        console.error('User or user.school is undefined:', user);
+        setError('User or school not defined');
+        setLoading(false);
+        return;
+      }
+
+      console.log('Fetching students for user:', user);
+
+      // Refresh token synchronously before fetching data
       const auth = getAuth();
       const currentUser = auth.currentUser;
+      let userEmail = 'unknown';
       if (currentUser) {
         try {
           const tokenResult = await currentUser.getIdTokenResult(true);
@@ -25,26 +34,14 @@ export default function useStudents(db, user, defaultCampus) {
           console.log('Token email (request.auth.token.email):', tokenResult.claims.email);
           console.log('Token UID (request.auth.uid):', tokenResult.claims.sub);
           setTokenClaims(tokenResult.claims);
+          userEmail = currentUser.email;
         } catch (err) {
           console.error('Error getting token claims:', err);
         }
       }
-
-      // Step 2: Fetch students after token refresh
-      if (!user || !user.school) {
-        console.error('User or user.school is undefined:', user);
-        setError('User or school not defined');
-        setLoading(false);
-        setIsInitialized(true);
-        return;
-      }
-
-      console.log('Fetching students for user:', user);
-
-      const userEmail = currentUser ? currentUser.email : 'unknown';
       console.log('User email (currentUser.email):', userEmail);
 
-      // Check Condition 1: User role document
+      // Check user role document
       try {
         const userDocRef = doc(db, 'schools', user.school, 'users', user.uid);
         const userDocSnap = await getDoc(userDocRef);
@@ -57,7 +54,7 @@ export default function useStudents(db, user, defaultCampus) {
         console.error('Error checking user role document:', err);
       }
 
-      // Check Condition 2: Counselor document by email (for reference)
+      // Check counselor document by email
       try {
         const counselorDocRef = doc(db, 'schools', user.school, 'counselors', userEmail);
         const counselorDocSnap = await getDoc(counselorDocRef);
@@ -113,7 +110,6 @@ export default function useStudents(db, user, defaultCampus) {
         setStudents([]);
       } finally {
         setLoading(false);
-        setIsInitialized(true);
       }
     };
 
@@ -121,14 +117,14 @@ export default function useStudents(db, user, defaultCampus) {
   }, [user, db]);
 
   const filteredStudents = useMemo(() => {
-    if (!isInitialized) return []; // Prevent computation until initialization is complete
+    if (students === null) return []; // Prevent computation until students is initialized
     return students.filter(student => {
       const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         student.studentId.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesCampus = selectedCampus ? student.campus === selectedCampus : true;
       return matchesSearch && matchesCampus;
     });
-  }, [students, searchQuery, selectedCampus, isInitialized]);
+  }, [students, searchQuery, selectedCampus]);
 
   return {
     filteredStudents,
