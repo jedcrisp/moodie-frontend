@@ -1,3 +1,4 @@
+// frontend/src/components/Navbar.jsx
 import React from 'react';
 import { Upload, LogOut, Smile, ArrowLeft, UserPlus } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -36,25 +37,27 @@ const Navbar = ({
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               style={searchInputStyle}
+              aria-label="Search students by name or ID"
             />
+            <select
+              value={selectedCampus}
+              onChange={e => setSelectedCampus(e.target.value)}
+              style={campusSelectorStyle}
+              aria-label="Select campus"
+            >
+              <option value="">All Campuses</option>
+              {availableCampuses.map(campus => (
+                <option
+                  key={campus}
+                  value={campus}
+                  disabled={user?.campuses && !user.campuses.includes(campus)}
+                >
+                  {campus}
+                  {user?.campuses && !user.campuses.includes(campus) ? ' (Restricted)' : ''}
+                </option>
+              ))}
+            </select>
           </div>
-          <select
-            value={selectedCampus}
-            onChange={e => setSelectedCampus(e.target.value)}
-            style={campusSelectorStyle}
-          >
-            <option value="">All Campuses</option>
-            {availableCampuses.map(campus => (
-              <option
-                key={campus}
-                value={campus}
-                disabled={user?.campuses && !user.campuses.includes(campus)}
-              >
-                {campus}
-                {user?.campuses && !user.campuses.includes(campus) ? ' (Restricted)' : ''}
-              </option>
-            ))}
-          </select>
         </div>
         <div style={controlsStyle}>
           <label style={uploadButtonStyle}>
@@ -68,29 +71,29 @@ const Navbar = ({
               disabled={uploading}
             />
           </label>
-          <button style={downloadButtonStyle} onClick={handleDownloadCsv}>
-            <span>Download CSV</span>
-          </button>
-          <button style={addCounselorButtonStyle} onClick={() => setShowCounselorModal(true)}>
+          <button style={addCounselorButtonStyle} onClick={() => setShowCounselorModal(true)} aria-label="Add a counselor">
             <UserPlus style={{ width: 20, height: 20 }} />
             <span>Add Counselor</span>
           </button>
-          <button style={addStudentButtonStyle} onClick={() => setShowStudentModal(true)}>
+          <button style={addStudentButtonStyle} onClick={() => setShowStudentModal(true)} aria-label="Add a student">
             <UserPlus style={{ width: 20, height: 20 }} />
             <span>Add Student</span>
           </button>
           {onMoodSelector ? (
-            <button style={backButtonStyle} onClick={() => navigate('/admin')}>
+            <button style={backButtonStyle} onClick={() => navigate('/admin')} aria-label="Go back">
               <ArrowLeft style={{ width: 20, height: 20 }} />
               <span>Back</span>
             </button>
           ) : (
-            <button style={moodSelectorStyle} onClick={handleMoodSelectorRedirect}>
+            <button style={moodSelectorStyle} onClick={handleMoodSelectorRedirect} aria-label="Go to mood selector">
               <Smile style={{ width: 20, height: 20 }} />
               <span>Mood Selector</span>
             </button>
           )}
-          <button style={signOutStyle} onClick={handleSignOut}>
+          <button style={downloadButtonStyle} onClick={handleDownloadCsv} aria-label="Download CSV">
+            <span>Download CSV</span>
+          </button>
+          <button style={signOutStyle} onClick={handleSignOut} aria-label="Sign out">
             <LogOut style={{ width: 20, height: 20 }} />
             <span>Sign Out</span>
           </button>
