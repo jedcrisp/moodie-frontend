@@ -338,8 +338,11 @@ export const profileContentStyle = {
 };
 
 export const infoSectionStyle = {
-  padding: '0',
-  borderBottom: '1px solid #E5E7EB',
+  display: 'flex',
+  flexDirection: 'column',
+  rowGap: '0.25rem',       // small gap between items
+  marginBottom: '1rem',
+  lineHeight: '1.3',       // tighten the line-height
 };
 
 export const eventsSectionStyle = {
