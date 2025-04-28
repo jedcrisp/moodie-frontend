@@ -1,5 +1,6 @@
+// frontend/src/components/AddCounselorModal.jsx
 import React from 'react';
-import { X, UserPlus } from 'lucide-react';
+import { X } from 'lucide-react';
 import { modalOverlayStyle, modalStyle, modalHeaderStyle, modalBodyStyle, modalFooterStyle, formGroupStyle, labelStyle, modalInputStyle, cancelButtonStyle, addButtonStyle } from '../styles.js';
 
 const AddCounselorModal = ({
@@ -21,6 +22,7 @@ const AddCounselorModal = ({
           <button
             onClick={() => setShowCounselorModal(false)}
             style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
+            aria-label="Close modal"
           >
             <X style={{ width: 20, height: 20 }} />
           </button>
