@@ -27,38 +27,31 @@ const Navbar = ({
 
   return (
     <header style={headerStyle}>
-      <div style={headerInnerStyle}>
-        <div style={brandingStyle}>
-          <h1 style={titleStyle}>{schoolDisplayName} Dashboard</h1>
-          <div style={searchContainerStyle}>
-            <input
-              type="text"
-              placeholder="Search by name or ID…"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              style={searchInputStyle}
-              aria-label="Search students by name or ID"
-            />
-            <select
-              value={selectedCampus}
-              onChange={e => setSelectedCampus(e.target.value)}
-              style={campusSelectorStyle}
-              aria-label="Select campus"
-            >
-              <option value="">All Campuses</option>
-              {availableCampuses.map(campus => (
-                <option
-                  key={campus}
-                  value={campus}
-                  disabled={user?.campuses && !user.campuses.includes(campus)}
-                >
-                  {campus}
-                  {user?.campuses && !user.campuses.includes(campus) ? ' (Restricted)' : ''}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+  <div style={headerInnerStyle}>
+    <div style={brandingStyle}>
+      <h1 style={titleStyle}>{schoolDisplayName} Dashboard</h1>
+
+      {/* Add your search + campus selector here */}
+      <div style={searchContainerStyle}>
+        <input
+          type="text"
+          placeholder="Search by name or ID…"
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          style={searchInputStyle}
+        />
+        <select
+          value={selectedCampus}
+          onChange={e => setSelectedCampus(e.target.value)}
+          style={campusSelectorStyle}
+        >
+          <option value="">All Campuses</option>
+          {availableCampuses.map(c => (
+            <option key={c} value={c}>{c}</option>
+          ))}
+        </select>
+      </div>
+    </div>
         <div style={controlsStyle}>
           <label style={uploadButtonStyle}>
             <Upload style={{ width: 20, height: 20 }} />
