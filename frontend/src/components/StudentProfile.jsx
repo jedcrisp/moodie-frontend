@@ -1,292 +1,208 @@
-// src/components/StudentProfile.jsx
+// frontend/src/components/StudentProfile.jsx
 import React, { useState, useEffect } from 'react';
-import {
-  getFirestore,
-  doc,
-  getDoc,
-  collection,
-  query,
-  orderBy,
-  limit,
-  getDocs,
-  updateDoc,
-} from 'firebase/firestore';
-import { ArrowLeft } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { db } from './firebase';
+import { getFirestore, doc, getDoc, collection, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
+import { ArrowLeft, X, Calendar, UserPlus } from 'lucide-react';
+import { profileContainerStyle, profileHeaderStyle, profileContentStyle, infoSectionStyle, eventsSectionStyle, eventsListStyle, eventChipStyle, addEventButtonStyle, modalOverlayStyle, modalStyle, modalHeaderStyle, modalBodyStyle, modalFooterStyle, formGroupStyle, labelStyle, modalInputStyle, cancelButtonStyle, addButtonStyle, backButtonStyle } from '../styles.js';
 
 export default function StudentProfile({ user }) {
-  const { id } = useParams();
+  const { studentId } = useParams();
   const navigate = useNavigate();
+  const db = getFirestore();
   const [student, setStudent] = useState(null);
-  const [moods, setMoods] = useState([]);
-  const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ grade: '', birthday: '', teacher: '', notes: '' });
+  const [lifeEvents, setLifeEvents] = useState([]);
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [newEventType, setNewEventType] = useState('');
+  const [newEventDate, setNewEventDate] = useState(new Date().toISOString().split('T')[0]);
+  const [newEventNotes, setNewEventNotes] = useState('');
 
-  // Fetch student data
+  const eventTypes = [
+    { name: 'Divorce', category: 'emotional' },
+    { name: 'Death in Family', category: 'emotional' },
+    { name: 'Moved House', category: 'relocation' },
+    { name: 'New Sibling', category: 'family' },
+    { name: 'Other', category: 'other' },
+  ];
+
   useEffect(() => {
-    async function load() {
-      const ref = doc(db, 'schools', user.school, 'students', id);
-      const snap = await getDoc(ref);
-      if (snap.exists()) {
-        const data = snap.data();
-        setStudent(data);
-        setForm({
-          grade: data.grade || '',
-          birthday: data.birthday || '',
-          teacher: data.teacher || '',
-          notes: data.notes || '',
-        });
+    async function fetchStudentData() {
+      try {
+        // Fetch student details
+        const studentDoc = await getDoc(doc(db, 'schools', user.school, 'students', studentId));
+        if (studentDoc.exists()) {
+          setStudent({ id: studentDoc.id, ...studentDoc.data() });
+        } else {
+          console.error('Student not found');
+          navigate('/admin');
+        }
+
+        // Fetch life events
+        const eventsSnap = await getDocs(
+          collection(db, 'schools', user.school, 'students', studentId, 'lifeEvents')
+        );
+        const events = eventsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        events.sort((a, b) => b.date.toDate() - a.date.toDate()); // Sort by date, newest first
+        setLifeEvents(events);
+      } catch (err) {
+        console.error('Error fetching student data:', err);
+        navigate('/admin');
       }
-      // load moods
-      const moodsSnap = await getDocs(
-        query(
-          collection(db, 'schools', user.school, 'students', id, 'moods'),
-          orderBy('date', 'desc'),
-          limit(10)
-        )
-      );
-      setMoods(moodsSnap.docs.map(d => d.data()));
     }
-    load();
-  }, [db, user, id]);
+    fetchStudentData();
+  }, [db, user, studentId, navigate]);
 
-  const handleChange = e => {
-    const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
+  const handleAddEvent = async () => {
+    if (!newEventType || !newEventDate) {
+      alert('Please select an event type and date.');
+      return;
+    }
+    if (newEventNotes.length > 100) {
+      alert('Notes cannot exceed 100 characters.');
+      return;
+    }
+    try {
+      const eventData = {
+        type: newEventType,
+        date: new Date(newEventDate),
+        notes: newEventNotes.trim(),
+        createdAt: serverTimestamp(),
+      };
+      const eventRef = await addDoc(
+        collection(db, 'schools', user.school, 'students', studentId, 'lifeEvents'),
+        eventData
+      );
+      setLifeEvents(prev => [
+        { id: eventRef.id, ...eventData, date: new Date(newEventDate) },
+        ...prev,
+      ]);
+      setShowEventModal(false);
+      setNewEventType('');
+      setNewEventDate(new Date().toISOString().split('T')[0]);
+      setNewEventNotes('');
+    } catch (err) {
+      console.error('Error adding life event:', err);
+      alert('Failed to add life event. Please try again.');
+    }
   };
 
-  const handleSave = async () => {
-    const ref = doc(db, 'schools', user.school, 'students', id);
-    await updateDoc(ref, form);
-    setStudent(prev => ({ ...prev, ...form }));
-    setEditing(false);
-  };
-
-  if (!student) return <div>Loading…</div>;
+  if (!student) return <div>Loading...</div>;
 
   return (
-    <div style={styles.container}>
-      <button style={styles.back} onClick={() => navigate(-1)}>
-        <ArrowLeft size={20} /> Back
-      </button>
-      <div style={styles.card}>
-        <h1 style={styles.name}>{student.name}</h1>
-        <div style={styles.grid}>
-          <div style={styles.field}>
-            <label style={styles.label}>Student ID</label>
-            <div style={styles.value}>{student.studentId}</div>
-          </div>
-          <div style={styles.field}>
-            <label style={styles.label}>Grade</label>
-            {editing ? (
-              <input
-                style={styles.input}
-                name="grade"
-                value={form.grade}
-                onChange={handleChange}
-              />
-            ) : (
-              <div style={styles.value}>{student.grade}</div>
-            )}
-          </div>
-          <div style={styles.field}>
-            <label style={styles.label}>Birthday</label>
-            {editing ? (
-              <input
-                type="date"
-                style={styles.input}
-                name="birthday"
-                value={form.birthday}
-                onChange={handleChange}
-              />
-            ) : (
-              <div style={styles.value}>{student.birthday || '—'}</div>
-            )}
-          </div>
-          <div style={styles.field}>
-            <label style={styles.label}>Homeroom Teacher</label>
-            {editing ? (
-              <input
-                style={styles.input}
-                name="teacher"
-                value={form.teacher}
-                onChange={handleChange}
-                placeholder="Enter name"
-              />
-            ) : (
-              <div style={styles.value}>{student.teacher || '—'}</div>
-            )}
-          </div>
-        </div>
-
-        <div style={styles.field}>  
-          <label style={styles.label}>Notes</label>
-          <div style={styles.notesBox}>
-            {editing ? (
-              <textarea
-                name="notes"
-                style={styles.textArea}
-                value={form.notes}
-                onChange={handleChange}
-                placeholder="Add your notes..."
-              />
-            ) : (
-              <div style={styles.value}>{student.notes || '—'}</div>
-            )}
-          </div>
-        </div>
-
-        <div style={styles.actions}>
-          {editing ? (
-            <>
-              <button style={styles.cancel} onClick={() => setEditing(false)}>
+    <div style={profileContainerStyle}>
+      {showEventModal && (
+        <div style={modalOverlayStyle}>
+          <div style={modalStyle}>
+            <div style={modalHeaderStyle}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Add Life Event</h3>
+              <button
+                onClick={() => setShowEventModal(false)}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
+              >
+                <X style={{ width: 20, height: 20 }} />
+              </button>
+            </div>
+            <div style={modalBodyStyle}>
+              <div style={formGroupStyle}>
+                <label style={labelStyle}>Event Type *</label>
+                <select
+                  value={newEventType}
+                  onChange={e => setNewEventType(e.target.value)}
+                  style={modalInputStyle}
+                  required
+                >
+                  <option value="">Select an event</option>
+                  {eventTypes.map(event => (
+                    <option key={event.name} value={event.name}>
+                      {event.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div style={formGroupStyle}>
+                <label style={labelStyle}>Date *</label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="date"
+                    value={newEventDate}
+                    onChange={e => setNewEventDate(e.target.value)}
+                    style={modalInputStyle}
+                    required
+                  />
+                  <Calendar style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: '#4B5563' }} />
+                </div>
+              </div>
+              <div style={formGroupStyle}>
+                <label style={labelStyle}>Notes (optional, max 100 chars)</label>
+                <textarea
+                  value={newEventNotes}
+                  onChange={e => setNewEventNotes(e.target.value)}
+                  style={{ ...modalInputStyle, resize: 'none', height: '60px' }}
+                  maxLength={100}
+                  placeholder="Brief notes..."
+                />
+              </div>
+            </div>
+            <div style={modalFooterStyle}>
+              <button onClick={() => setShowEventModal(false)} style={cancelButtonStyle}>
                 Cancel
               </button>
-              <button style={styles.save} onClick={handleSave}>
-                Save Changes
+              <button onClick={handleAddEvent} style={addButtonStyle}>
+                Add Event
               </button>
-            </>
-          ) : (
-            <button style={styles.edit} onClick={() => setEditing(true)}>
-              Edit Profile
-            </button>
-          )}
+            </div>
+          </div>
         </div>
+      )}
 
-        <h2 style={styles.section}>Recent Moods</h2>
-        <div style={styles.moodList}>
-          {moods.length > 0 ? (
-            moods.map((m, i) => (
-              <span key={i} style={styles.mood}>{m.emoji}</span>
-            ))
+      <div style={profileHeaderStyle}>
+        <button onClick={() => navigate('/admin')} style={backButtonStyle}>
+          <ArrowLeft style={{ width: 20, height: 20 }} />
+          <span>Back</span>
+        </button>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: 600 }}>{student.name}</h2>
+      </div>
+      <div style={profileContentStyle}>
+        <div style={infoSectionStyle}>
+          <h3 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Student Info</h3>
+          <p><strong>Student ID:</strong> {student.studentId}</p>
+          <p><strong>Grade:</strong> {student.grade || '—'}</p>
+          <p><strong>Birthday:</strong> {student.birthday || '—'}</p>
+          <p><strong>Campus:</strong> {student.campus || '—'}</p>
+          <p><strong>Email:</strong> {student.email || '—'}</p>
+        </div>
+        <div style={eventsSectionStyle}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Life Events</h3>
+            <button onClick={() => setShowEventModal(true)} style={addEventButtonStyle}>
+              <UserPlus style={{ width: 16, height: 16 }} />
+              <span>Add Event</span>
+            </button>
+          </div>
+          {lifeEvents.length > 0 ? (
+            <div style={eventsListStyle}>
+              {lifeEvents.map(event => {
+                const eventType = eventTypes.find(type => type.name === event.type) || { category: 'other' };
+                const chipStyle = {
+                  ...eventChipStyle,
+                  backgroundColor: eventType.category === 'emotional' ? '#FEE2E2' : eventType.category === 'relocation' ? '#DBEAFE' : '#E5E7EB',
+                  color: eventType.category === 'emotional' ? '#DC2626' : eventType.category === 'relocation' ? '#2563EB' : '#4B5563',
+                };
+                return (
+                  <div key={event.id} style={chipStyle}>
+                    <span style={{ marginRight: '4px' }}>
+                      {eventType.category === 'emotional' ? '❤️' : eventType.category === 'relocation' ? '🏠' : '📅'}
+                    </span>
+                    {event.type} ({new Date(event.date).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' })})
+                    {event.notes && <span style={{ marginLeft: '4px', fontStyle: 'italic' }}>- {event.notes}</span>}
+                  </div>
+                );
+              })}
+            </div>
           ) : (
-            <div style={styles.value}>—</div>
+            <p style={{ color: '#4B5563', fontStyle: 'italic' }}>No life events recorded.</p>
           )}
         </div>
       </div>
     </div>
   );
 }
-
-const styles = {
-  container: {
-    padding: '2rem',
-    background: 'linear-gradient(to bottom right, #fff, #f0f4f8)',
-    minHeight: '100vh',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'flex-start',
-  },
-  back: {
-    marginBottom: '1rem',
-    background: 'none',
-    border: 'none',
-    color: '#4B5563',
-    fontSize: '1rem',
-    display: 'flex',
-    alignItems: 'center',
-    cursor: 'pointer',
-  },
-  card: {
-    background: 'white',
-    borderRadius: '0.5rem',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-    padding: '2rem',
-    width: '100%',
-    maxWidth: '600px',
-  },
-  name: {
-    fontSize: '2rem',
-    marginBottom: '1rem',
-    color: '#1F2937',
-  },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: '1rem',
-    marginBottom: '1.5rem',
-  },
-  field: {
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  label: {
-    fontSize: '0.875rem',
-    fontWeight: 600,
-    color: '#4B5563',
-    marginBottom: '0.5rem',
-  },
-  value: {
-    fontSize: '1rem',
-    color: '#1F2937',
-  },
-  input: {
-    padding: '0.5rem',
-    border: '1px solid #CBD5E0',
-    borderRadius: '0.375rem',
-    fontSize: '1rem',
-    outline: 'none',
-  },
-  notesBox: {
-    background: '#F9FAFB',
-    border: '1px solid #E5E7EB',
-    borderRadius: '0.375rem',
-    padding: '0.75rem',
-    minHeight: '4rem',
-  },
-  textArea: {
-    width: '100%',
-    height: '100%',
-    border: 'none',
-    outline: 'none',
-    resize: 'vertical',
-    background: 'transparent',
-    fontSize: '1rem',
-    color: '#1F2937',
-  },
-  actions: {
-    marginTop: '1rem',
-    display: 'flex',
-    gap: '0.5rem',
-  },
-  edit: {
-    background: '#4F46E5',
-    color: 'white',
-    padding: '0.5rem 1rem',
-    border: 'none',
-    borderRadius: '0.375rem',
-    cursor: 'pointer',
-  },
-  cancel: {
-    background: 'none',
-    color: '#6B7280',
-    padding: '0.5rem 1rem',
-    border: '1px solid #D1D5DB',
-    borderRadius: '0.375rem',
-    cursor: 'pointer',
-  },
-  save: {
-    background: '#10B981',
-    color: 'white',
-    padding: '0.5rem 1rem',
-    border: 'none',
-    borderRadius: '0.375rem',
-    cursor: 'pointer',
-  },
-  section: {
-    fontSize: '1.25rem',
-    fontWeight: 600,
-    color: '#1F2937',
-    marginTop: '2rem',
-    marginBottom: '0.5rem',
-  },
-  moodList: {
-    display: 'flex',
-    gap: '0.5rem',
-    flexWrap: 'wrap',
-  },
-  mood: {
-    fontSize: '1.5rem',
-  },
-};
