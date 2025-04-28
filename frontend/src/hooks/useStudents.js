@@ -1,16 +1,38 @@
 // frontend/src/hooks/useStudents.js
-import { useState, useEffect } from 'react';
-import { getFirestore, collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { useState, useEffect, useMemo } from 'react';
+import { getFirestore, collection, getDocs, deleteDoc, doc, getDoc } from 'firebase/firestore';
 import { tooltipTextStyle } from '../styles.js';
 
 export default function useStudents(db, user, defaultCampus) {
-  const [filteredStudents, setFilteredStudents] = useState([]);
+  const [students, setStudents] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCampus, setSelectedCampus] = useState(defaultCampus || '');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const fetchStudents = async () => {
-    if (!user || !user.school) return;
+    if (!user || !user.school) {
+      console.error('User or user.school is undefined:', user);
+      setError('User or school not defined');
+      setLoading(false);
+      return;
+    }
+
+    console.log('Fetching students for user:', user);
+
+    // Check if the user is a counselor
+    try {
+      const userDocRef = doc(db, 'schools', user.school, 'users', user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+      if (userDocSnap.exists()) {
+        console.log('User role document:', userDocSnap.data());
+      } else {
+        console.log('User role document does not exist at:', userDocRef.path);
+      }
+    } catch (err) {
+      console.error('Error checking user role:', err);
+    }
+
     setLoading(true);
     try {
       const studentsSnap = await getDocs(collection(db, 'schools', user.school, 'students'));
@@ -46,9 +68,12 @@ export default function useStudents(db, user, defaultCampus) {
         };
       });
 
-      setFilteredStudents(studentsWithMoodsAndEvents);
+      setStudents(studentsWithMoodsAndEvents);
+      setError(null);
     } catch (err) {
       console.error('Error fetching students:', err);
+      setError('Failed to fetch students: ' + err.message);
+      setStudents([]);
     } finally {
       setLoading(false);
     }
@@ -65,18 +90,18 @@ export default function useStudents(db, user, defaultCampus) {
       await fetchStudents();
     } catch (err) {
       console.error('Error deleting student:', err);
+      setError('Failed to delete student: ' + err.message);
     }
   };
 
-  useEffect(() => {
-    const filtered = filteredStudents.filter(student => {
+  const filteredStudents = useMemo(() => {
+    return students.filter(student => {
       const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         student.studentId.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesCampus = selectedCampus ? student.campus === selectedCampus : true;
       return matchesSearch && matchesCampus;
     });
-    setFilteredStudents(filtered);
-  }, [searchQuery, selectedCampus]);
+  }, [students, searchQuery, selectedCampus]);
 
   return {
     filteredStudents,
@@ -87,5 +112,6 @@ export default function useStudents(db, user, defaultCampus) {
     loading,
     fetchStudents,
     deleteStudent,
+    error,
   };
 }
