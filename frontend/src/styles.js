@@ -22,10 +22,8 @@ export const headerInnerStyle = {
 
 export const brandingStyle = {
   display: 'flex',
-  flexDirection: 'column',
   alignItems: 'center',
-  gap: '0.5rem',
-  width: '100%',
+  gap: '1rem',
 };
 
 export const titleStyle = {
