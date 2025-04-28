@@ -1,3 +1,4 @@
+// frontend/src/hooks/useStudents.js
 import { useState, useEffect } from 'react';
 import { collection, getDocs, query, orderBy, limit, where, deleteDoc } from 'firebase/firestore';
 
