@@ -10,6 +10,23 @@ export default function useStudents(db, user, defaultCampus) {
   const [selectedCampus, setSelectedCampus] = useState(defaultCampus || '');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [tokenClaims, setTokenClaims] = useState(null);
+
+  // Separate useEffect for token refresh
+  useEffect(() => {
+    const auth = getAuth();
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      currentUser.getIdTokenResult(true).then(tokenResult => {
+        console.log('Token claims:', tokenResult.claims);
+        console.log('Token email (request.auth.token.email):', tokenResult.claims.email);
+        console.log('Token UID (request.auth.uid):', tokenResult.claims.sub);
+        setTokenClaims(tokenResult.claims);
+      }).catch(err => {
+        console.error('Error getting token claims:', err);
+      });
+    }
+  }, []);
 
   const fetchStudents = async () => {
     if (!user || !user.school) {
@@ -21,21 +38,10 @@ export default function useStudents(db, user, defaultCampus) {
 
     console.log('Fetching students for user:', user);
 
-    // Get the user's email and token claims
     const auth = getAuth();
     const currentUser = auth.currentUser;
     const userEmail = currentUser ? currentUser.email : 'unknown';
     console.log('User email (currentUser.email):', userEmail);
-    if (currentUser) {
-      try {
-        const tokenResult = await currentUser.getIdTokenResult(true);
-        console.log('Token claims:', tokenResult.claims);
-        console.log('Token email (request.auth.token.email):', tokenResult.claims.email);
-        console.log('Token UID (request.auth.uid):', tokenResult.claims.sub);
-      } catch (err) {
-        console.error('Error getting token claims:', err);
-      }
-    }
 
     // Check Condition 1: User role document
     try {
@@ -50,7 +56,7 @@ export default function useStudents(db, user, defaultCampus) {
       console.error('Error checking user role document:', err);
     }
 
-    // Check Condition 2: Counselor document by email (for reference, even though rules simplified)
+    // Check Condition 2: Counselor document by email (for reference)
     try {
       const counselorDocRef = doc(db, 'schools', user.school, 'counselors', userEmail);
       const counselorDocSnap = await getDoc(counselorDocRef);
@@ -69,11 +75,11 @@ export default function useStudents(db, user, defaultCampus) {
       const moodsSnap = await getDocs(collection(db, 'schools', user.school, 'moods'));
       const eventsSnap = await getDocs(collection(db, 'schools', user.school, 'lifeEvents'));
 
-      const students = studentsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const studentsData = studentsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       const moods = moodsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       const events = eventsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-      const studentsWithMoodsAndEvents = students.map(student => {
+      const studentsWithMoodsAndEvents = studentsData.map(student => {
         const studentMoods = moods.filter(m => m.studentId === student.id);
         const studentEvents = events.filter(e => e.studentId === student.id);
         const moodsWithEmoji = studentMoods.map(m => ({
@@ -113,17 +119,6 @@ export default function useStudents(db, user, defaultCampus) {
     fetchStudents();
   }, [user, db]);
 
-  const deleteStudent = async (studentId) => {
-    if (!studentId) return;
-    try {
-      await deleteDoc(doc(db, 'schools', user.school, 'students', studentId));
-      await fetchStudents();
-    } catch (err) {
-      console.error('Error deleting student:', err);
-      setError('Failed to delete student: ' + err.message);
-    }
-  };
-
   const filteredStudents = useMemo(() => {
     return students.filter(student => {
       const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -143,5 +138,6 @@ export default function useStudents(db, user, defaultCampus) {
     fetchStudents,
     deleteStudent,
     error,
+    tokenClaims,
   };
 }
