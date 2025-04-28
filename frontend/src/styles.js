@@ -297,12 +297,69 @@ export const addButtonStyle = {
   cursor: 'pointer',
 };
 
+// Styles for the custom pop-up
+// frontend/src/styles.js
+// ... (previous styles remain unchanged)
+
+// Styles for the custom pop-up
+export const customPopupOverlayStyle = {
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  zIndex: 2000,
+};
+
+export const customPopupStyle = {
+  backgroundColor: 'white',
+  padding: '1rem',
+  borderRadius: '12px',
+  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+  maxWidth: '300px',
+  width: '100%',
+  textAlign: 'center',
+};
+
+export const customPopupMessageStyle = {
+  fontSize: '1rem',
+  color: '#1F2937',
+  marginBottom: '1rem',
+};
+
+export const customPopupButtonStyle = {
+  padding: '0.5rem 1rem',
+  backgroundColor: '#8B5CF6',
+  color: 'white',
+  border: 'none',
+  borderRadius: '9999px',
+  cursor: 'pointer',
+  fontSize: '0.875rem',
+};
+
+export const customPopupCancelButtonStyle = {
+  padding: '0.5rem 1rem',
+  backgroundColor: '#6B7280',
+  color: 'white',
+  border: 'none',
+  borderRadius: '9999px',
+  cursor: 'pointer',
+  fontSize: '0.875rem',
+  marginRight: '0.5rem',
+};
+
+
 // StudentProfile styles (already added previously)
 export const studentInfoGridStyle = {
   display: 'grid',
-  gap: '0.1rem', // Reduced gap between fields
+  gap: '0.05rem', // Further reduced gap between fields
   fontSize: '0.875rem',
   color: '#4B5563',
+  lineHeight: '1.2', // Reduce line height for tighter spacing
 };
 
 export const profileContainerStyle = {
