@@ -21,11 +21,21 @@ export default function useStudents(db, user, defaultCampus) {
 
     console.log('Fetching students for user:', user);
 
-    // Get the user's email from Firebase Auth
+    // Get the user's email and token claims
     const auth = getAuth();
     const currentUser = auth.currentUser;
     const userEmail = currentUser ? currentUser.email : 'unknown';
-    console.log('User email:', userEmail);
+    console.log('User email (currentUser.email):', userEmail);
+    if (currentUser) {
+      try {
+        const tokenResult = await currentUser.getIdTokenResult(true);
+        console.log('Token claims:', tokenResult.claims);
+        console.log('Token email (request.auth.token.email):', tokenResult.claims.email);
+        console.log('Token UID (request.auth.uid):', tokenResult.claims.sub);
+      } catch (err) {
+        console.error('Error getting token claims:', err);
+      }
+    }
 
     // Check Condition 1: User role document
     try {
@@ -40,7 +50,7 @@ export default function useStudents(db, user, defaultCampus) {
       console.error('Error checking user role document:', err);
     }
 
-    // Check Condition 2: Counselor document by email
+    // Check Condition 2: Counselor document by email (for reference, even though rules simplified)
     try {
       const counselorDocRef = doc(db, 'schools', user.school, 'counselors', userEmail);
       const counselorDocSnap = await getDoc(counselorDocRef);
