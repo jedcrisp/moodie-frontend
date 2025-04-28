@@ -53,35 +53,33 @@ export default function AdminDashboard({ user }) {
   const handleSignOut = useAutoLogout(auth);
 
   const handleAddCounselor = async () => {
-    if (!newCounselorName || !newCounselorEmail || !newCounselorCampus) {
-      alert('Please fill in all fields.');
-      return;
-    }
-    if (!newCounselorEmail.includes('@')) {
-      alert('Please enter a valid email address.');
-      return;
-    }
-    try {
-      await addNewCampus(newCounselorCampus);
-      await setDoc(
-        doc(db, 'schools', user.school, 'counselors', newCounselorEmail),
-        {
-          email: newCounselorEmail,
-          name: newCounselorName,
-          campus: newCounselorCampus,
-          addedAt: serverTimestamp(),
-        }
-      );
-      setNewCounselorName('');
-      setNewCounselorEmail('');
-      setNewCounselorCampus('');
-      setShowCounselorModal(false);
-      alert('Counselor added successfully.');
-    } catch (err) {
-      console.error('Error adding counselor:', err);
-      alert('Failed to add counselor. Please try again.');
-    }
-  };
+  if (!newCounselorName || !newCounselorEmail || !newCounselorCampus) {
+    alert('Please fill in all required fields.');
+    return;
+  }
+  try {
+    // Add the counselor to the counselors collection using the email as the document ID
+    await setDoc(doc(db, 'schools', user.school, 'counselors', newCounselorEmail), {
+      name: newCounselorName,
+      email: newCounselorEmail,
+      campus: newCounselorCampus,
+      createdAt: serverTimestamp(),
+    });
+
+    // Note: In a real app, you should create a Firebase Auth user for the counselor
+    // and get their UID. For now, we'll assume the counselor already exists in Auth
+    // and manually link them. You'll need to set the UID manually or via a backend process.
+    alert('Counselor added. Please ensure the counselor is registered in Firebase Auth and their UID is linked in the users collection.');
+
+    setShowCounselorModal(false);
+    setNewCounselorName('');
+    setNewCounselorEmail('');
+    setNewCounselorCampus('');
+  } catch (err) {
+    console.error('Error adding counselor:', err);
+    alert('Failed to add counselor. Please try again.');
+  }
+};
 
   const handleAddStudent = async () => {
     if (!newStudentName || !newStudentId || !newStudentEmail) {
