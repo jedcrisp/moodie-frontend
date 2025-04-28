@@ -2,7 +2,7 @@
 import React from 'react';
 import { Upload, LogOut, Smile, ArrowLeft, UserPlus } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { headerStyle, headerInnerStyle, brandingStyle, titleStyle, searchContainerStyle, searchInputStyle, campusSelectorStyle, controlsStyle, uploadButtonStyle, addCounselorButtonStyle, addStudentButtonStyle, downloadButtonStyle, moodSelectorStyle, backButtonStyle, signOutStyle } from '../styles.js';
+import { headerStyle, headerInnerStyle, brandingStyle, titleStyle, searchContainerStyle, searchInputStyle, campusSelectorStyle, controlsStyle, uploadButtonStyle, addCounselorButtonStyle, addStudentButtonStyle, downloadButtonStyle, moodSelectorStyle, backButtonStyle, signOutStyle, iconStyle } from '../styles.js';
 
 const Navbar = ({
   schoolDisplayName,
