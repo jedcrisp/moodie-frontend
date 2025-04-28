@@ -1,5 +1,4 @@
 // frontend/src/styles.js
-// Container styles
 export const containerStyle = {
   width: '100vw',
   height: '100vh',
@@ -16,33 +15,33 @@ export const headerStyle = {
 
 export const headerInnerStyle = {
   display: 'flex',
-  flexDirection: 'column', // Stack branding and controls vertically
-  alignItems: 'stretch', // Stretch children to fill width
-  gap: '1rem',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  flexWrap: 'wrap',
+  gap: '0.5rem',
 };
 
 export const brandingStyle = {
   display: 'flex',
   flexDirection: 'column',
-  alignItems: 'center', // Center the title, search bar, and dropdown
+  alignItems: 'flex-start',
   gap: '0.5rem',
-  width: '100%', // Ensure it takes full width
+  flexWrap: 'wrap',
 };
 
 export const titleStyle = {
   fontSize: '1.5rem',
   fontWeight: 700,
-  background: 'linear-gradient(to right, #7C3AED, #EC4899)',
+  background: 'linear-gradient(to right, #7C3AED, #7C3AED)', // Single color gradient for uniformity
   WebkitBackgroundClip: 'text',
   color: 'transparent',
 };
 
 export const controlsStyle = {
   display: 'flex',
-  justifyContent: 'center', // Center the buttons
   gap: '0.5rem',
   flexWrap: 'wrap',
-  width: '100%',
+  alignItems: 'center',
 };
 
 export const iconStyle = { width: 20, height: 20 };
@@ -133,19 +132,16 @@ export const signOutStyle = {
 
 export const searchContainerStyle = {
   display: 'flex',
-  justifyContent: 'center', // Center the search bar and dropdown
   alignItems: 'center',
   gap: '0.5rem',
-  width: '100%', // Ensure it takes full width
-  flexWrap: 'wrap', // Allow wrapping on smaller screens
+  width: '100%',
 };
 
 export const searchInputStyle = {
   padding: '0.5rem 1rem',
   border: '1px solid #D1D5DB',
   borderRadius: '9999px',
-  width: '200px', // Slightly wider to match TestSchool
-  maxWidth: '100%',
+  width: '150px',
 };
 
 export const campusSelectorStyle = {
@@ -155,8 +151,6 @@ export const campusSelectorStyle = {
   backgroundColor: 'white',
   cursor: 'pointer',
   fontSize: '0.875rem',
-  width: '200px', // Match the search bar width
-  maxWidth: '100%',
 };
 
 export const mainStyle = { 
@@ -448,7 +442,7 @@ export const studentInfoGridStyle = {
 export const eventActionButtonStyle = {
   background: 'transparent',
   border: 'none',
-  cursor: 'pointer',
+  cursor: Residue from previous CSS migration removed
   marginLeft: '4px',
 };
 
