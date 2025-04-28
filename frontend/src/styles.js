@@ -15,15 +15,18 @@ export const headerStyle = {
 
 export const headerInnerStyle = {
   display: 'flex',
-  flexDirection: 'space-between',
-  alignItems: 'stretch',
-  gap: '1rem',
+  justifyContent: 'space-between', // Restore side-by-side layout
+  alignItems: 'center', // Align items vertically centered
+  flexWrap: 'wrap',
+  gap: '0.5rem',
 };
 
 export const brandingStyle = {
   display: 'flex',
-  alignItems: 'center',
-  gap: '1rem',
+  flexDirection: 'column', // Keep title, search bar, and dropdown stacked
+  alignItems: 'flex-start', // Align to the left
+  gap: '0.5rem',
+  width: 'auto', // Allow natural width
 };
 
 export const titleStyle = {
@@ -36,10 +39,10 @@ export const titleStyle = {
 
 export const controlsStyle = {
   display: 'flex',
-  justifyContent: 'center',
+  justifyContent: 'flex-end', // Align buttons to the right
   gap: '0.5rem',
   flexWrap: 'wrap',
-  width: '100%',
+  alignItems: 'center',
 };
 
 export const iconStyle = { width: 20, height: 20 };
@@ -130,11 +133,10 @@ export const signOutStyle = {
 
 export const searchContainerStyle = {
   display: 'flex',
-  justifyContent: 'center',
   alignItems: 'center',
   gap: '0.5rem',
-  width: '100%',
-  flexWrap: 'wrap',
+  width: 'auto', // Allow natural width
+  flexWrap: 'wrap', // Allow wrapping on smaller screens
 };
 
 export const searchInputStyle = {
