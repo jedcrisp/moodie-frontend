@@ -163,6 +163,7 @@ export default function StudentProfile({ user }) {
                 <button
                   onClick={() => setShowEventModal(false)}
                   style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
+                  aria-label="Close modal"
                 >
                   <X style={{ width: 20, height: 20 }} />
                 </button>
@@ -205,14 +206,15 @@ export default function StudentProfile({ user }) {
                     style={{ ...modalInputStyle, resize: 'none', height: '60px' }}
                     maxLength={100}
                     placeholder="Brief notes..."
+                    aria-label="Life event notes"
                   />
                 </div>
               </div>
               <div style={modalFooterStyle}>
-                <button onClick={() => setShowEventModal(false)} style={cancelButtonStyle}>
+                <button onClick={() => setShowEventModal(false)} style={cancelButtonStyle} aria-label="Cancel">
                   Cancel
                 </button>
-                <button onClick={handleAddEvent} style={addButtonStyle}>
+                <button onClick={handleAddEvent} style={addButtonStyle} aria-label="Add life event">
                   Add Event
                 </button>
               </div>
@@ -221,18 +223,18 @@ export default function StudentProfile({ user }) {
         )}
 
         <div style={profileHeaderStyle}>
-          <button onClick={() => navigate('/admin')} style={backButtonStyle}>
+          <button onClick={() => navigate('/admin')} style={backButtonStyle} aria-label="Go back">
             <ArrowLeft style={{ width: 20, height: 20 }} />
             <span>Back</span>
           </button>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 600 }}>{student.name}</h2>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 600 }}>{student.name}</h2> {/* Increased font size */}
         </div>
         <div style={profileContentStyle}>
           <div style={infoSectionStyle}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Student Info</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#1F2937' }}>Student Info</h3>
               {!isEditing && (
-                <button onClick={() => setIsEditing(true)} style={editButtonStyle}>
+                <button onClick={() => setIsEditing(true)} style={editButtonStyle} aria-label="Edit student information">
                   <Edit style={{ width: 16, height: 16 }} />
                   <span>Edit</span>
                 </button>
@@ -241,77 +243,77 @@ export default function StudentProfile({ user }) {
             {isEditing ? (
               <>
                 <div style={formGroupStyle}>
-                  <label style={labelStyle}>Student ID</label>
+                  <label style={{ ...labelStyle, fontSize: '0.75rem' }}>Student ID</label>
                   <input
                     type="text"
                     value={student.studentId}
                     disabled
-                    style={{ ...modalInputStyle, backgroundColor: '#F3F4F6' }}
+                    style={{ ...modalInputStyle, backgroundColor: '#F3F4F6', fontSize: '0.875rem' }}
                   />
                 </div>
                 <div style={formGroupStyle}>
-                  <label style={labelStyle}>Grade</label>
+                  <label style={{ ...labelStyle, fontSize: '0.75rem' }}>Grade</label>
                   <input
                     type="text"
                     value={editForm.grade}
                     onChange={e => setEditForm({ ...editForm, grade: e.target.value })}
-                    style={modalInputStyle}
+                    style={{ ...modalInputStyle, fontSize: '0.875rem' }}
                   />
                 </div>
                 <div style={formGroupStyle}>
-                  <label style={labelStyle}>Birthday</label>
+                  <label style={{ ...labelStyle, fontSize: '0.75rem' }}>Birthday</label>
                   <input
                     type="text"
                     value={editForm.birthday}
                     onChange={e => setEditForm({ ...editForm, birthday: e.target.value })}
-                    style={modalInputStyle}
+                    style={{ ...modalInputStyle, fontSize: '0.875rem' }}
                     placeholder="e.g., MM/DD/YYYY"
                   />
                 </div>
                 <div style={formGroupStyle}>
-                  <label style={labelStyle}>Campus</label>
+                  <label style={{ ...labelStyle, fontSize: '0.75rem' }}>Campus</label>
                   <input
                     type="text"
                     value={editForm.campus}
                     onChange={e => setEditForm({ ...editForm, campus: e.target.value })}
-                    style={modalInputStyle}
+                    style={{ ...modalInputStyle, fontSize: '0.875rem' }}
                   />
                 </div>
                 <div style={formGroupStyle}>
-                  <label style={labelStyle}>Email</label>
+                  <label style={{ ...labelStyle, fontSize: '0.75rem' }}>Email</label>
                   <input
                     type="email"
                     value={editForm.email}
                     onChange={e => setEditForm({ ...editForm, email: e.target.value })}
-                    style={modalInputStyle}
+                    style={{ ...modalInputStyle, fontSize: '0.875rem' }}
                   />
                 </div>
-                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
-                  <button onClick={handleEditSave} style={saveButtonStyle}>
+                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                  <button onClick={handleEditSave} style={saveButtonStyle} aria-label="Save changes">
                     <Save style={{ width: 16, height: 16 }} />
                     <span>Save</span>
                   </button>
-                  <button onClick={() => setIsEditing(false)} style={cancelEditButtonStyle}>
+                  <button onClick={() => setIsEditing(false)} style={cancelEditButtonStyle} aria-label="Cancel editing">
                     <XCircle style={{ width: 16, height: 16 }} />
                     <span>Cancel</span>
                   </button>
                 </div>
               </>
             ) : (
-              <>
-                <p><strong>Student ID:</strong> {student.studentId}</p>
-                <p><strong>Grade:</strong> {student.grade || '—'}</p>
-                <p><strong>Birthday:</strong> {student.birthday || '—'}</p>
-                <p><strong>Campus:</strong> {student.campus || '—'}</p>
-                <p><strong>Email:</strong> {student.email || '—'}</p>
-              </>
+              <div style={{ display: 'grid', gap: '0.25rem', fontSize: '0.875rem', color: '#4B5563' }}>
+                <p><strong style={{ color: '#1F2937' }}>Student ID:</strong> {student.studentId}</p>
+                <p><strong style={{ color: '#1F2937' }}>Grade:</strong> {student.grade || '—'}</p>
+                <p><strong style={{ color: '#1F2937' }}>Birthday:</strong> {student.birthday || '—'}</p>
+                <p><strong style={{ color: '#1F2937' }}>Campus:</strong> {student.campus || '—'}</p>
+                <p><strong style={{ color: '#1F2937' }}>Email:</strong> {student.email || '—'}</p>
+              </div>
             )}
           </div>
 
           <div style={notesSectionStyle}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Notes</h3>
-              <button onClick={handleSaveNotes} style={saveButtonStyle}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#1F2937' }}>Notes</h3>
+              <button onClick={handleSaveNotes} style={saveButtonStyle} aria-label="Save notes">
                 <Save style={{ width: 16, height: 16 }} />
                 <span>Save Notes</span>
               </button>
@@ -321,13 +323,14 @@ export default function StudentProfile({ user }) {
               onChange={e => setNotes(e.target.value)}
               style={notesTextareaStyle}
               placeholder="Add general notes about the student..."
+              aria-label="General notes about the student"
             />
           </div>
 
           <div style={eventsSectionStyle}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Life Events</h3>
-              <button onClick={() => setShowEventModal(true)} style={addEventButtonStyle}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#1F2937' }}>Life Events</h3>
+              <button onClick={() => setShowEventModal(true)} style={addEventButtonStyle} aria-label="Add a life event">
                 <UserPlus style={{ width: 16, height: 16 }} />
                 <span>Add Event</span>
               </button>
@@ -353,7 +356,7 @@ export default function StudentProfile({ user }) {
                 })}
               </div>
             ) : (
-              <p style={{ color: '#4B5563', fontStyle: 'italic' }}>No life events recorded.</p>
+              <p style={{ color: '#4B5563', fontStyle: 'italic', fontSize: '0.875rem' }}>No life events recorded.</p>
             )}
           </div>
         </div>
