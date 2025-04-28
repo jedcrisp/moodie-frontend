@@ -1,3 +1,4 @@
+// frontend/src/components/StudentTable.jsx
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Trash2, Calendar } from 'lucide-react';
