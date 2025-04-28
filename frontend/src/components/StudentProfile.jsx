@@ -25,6 +25,13 @@ export default function StudentProfile({ user }) {
   ];
 
   useEffect(() => {
+    // Defensive check: Ensure user, user.school, and studentId are defined
+    if (!user || !user.school || !studentId) {
+      console.error('Missing required data:', { user, studentId });
+      navigate('/admin');
+      return;
+    }
+
     async function fetchStudentData() {
       try {
         // Fetch student details
@@ -34,6 +41,7 @@ export default function StudentProfile({ user }) {
         } else {
           console.error('Student not found');
           navigate('/admin');
+          return;
         }
 
         // Fetch life events
@@ -48,8 +56,9 @@ export default function StudentProfile({ user }) {
         navigate('/admin');
       }
     }
+
     fetchStudentData();
-  }, [db, user, studentId, navigate]);
+  }, [user, studentId, navigate, db]); // Ensure all dependencies are included
 
   const handleAddEvent = async () => {
     if (!newEventType || !newEventDate) {
@@ -85,7 +94,11 @@ export default function StudentProfile({ user }) {
     }
   };
 
-  if (!student) return <div>Loading...</div>;
+  if (!student) return (
+    <div className="h-screen flex items-center justify-center bg-gradient-to-br from-rose-200 to-blue-200">
+      <p className="text-2xl text-purple-700" aria-live="polite">Loading student data…</p>
+    </div>
+  );
 
   return (
     <div style={profileContainerStyle}>
