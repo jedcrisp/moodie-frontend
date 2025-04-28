@@ -9,7 +9,7 @@ import AddStudentModal from './AddStudentModal.jsx';
 import AddCounselorModal from './AddCounselorModal.jsx';
 import useStudents from '../hooks/useStudents.js';
 import useSchoolData from '../hooks/useSchoolData.js';
-import { containerStyle, mainStyle, loadingStyle } from './styles.js';
+import './styles.css'; // Import the CSS file
 
 export default function AdminDashboard({ user }) {
   const navigate = useNavigate();
@@ -160,7 +160,7 @@ export default function AdminDashboard({ user }) {
   };
 
   return (
-    <>
+    <div className="container">
       <Navbar
         schoolDisplayName={schoolDisplayName}
         searchQuery={searchQuery}
@@ -219,6 +219,6 @@ export default function AdminDashboard({ user }) {
           </>
         )}
       </main>
-    </>
+    </div>
   );
 }
