@@ -1,3 +1,5 @@
+// frontend/src/styles.js
+// Existing styles (from AdminDashboard and other components)
 export const containerStyle = {
   width: '100vw',
   height: '100vh',
@@ -291,4 +293,68 @@ export const addButtonStyle = {
   border: 'none',
   borderRadius: '4px',
   cursor: 'pointer',
+};
+
+// New styles for StudentProfile.jsx
+export const profileContainerStyle = {
+  padding: '1rem',
+  backgroundColor: '#F9FAFB',
+  height: '100%',
+  overflow: 'auto',
+};
+
+export const profileHeaderStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '1rem',
+  marginBottom: '1rem',
+};
+
+export const profileContentStyle = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '1rem',
+};
+
+export const infoSectionStyle = {
+  backgroundColor: 'white',
+  padding: '1rem',
+  borderRadius: '8px',
+  boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+};
+
+export const eventsSectionStyle = {
+  backgroundColor: 'white',
+  padding: '1rem',
+  borderRadius: '8px',
+  boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+};
+
+export const eventsListStyle = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: '0.5rem',
+  marginTop: '0.5rem',
+};
+
+export const eventChipStyle = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  padding: '4px 8px',
+  borderRadius: '9999px',
+  fontSize: '0.75rem',
+  fontWeight: 500,
+};
+
+export const addEventButtonStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 6,
+  padding: '4px 8px',
+  backgroundColor: '#10B981',
+  border: 'none',
+  borderRadius: 9999,
+  color: 'white',
+  cursor: 'pointer',
+  fontSize: '0.875rem',
 };
