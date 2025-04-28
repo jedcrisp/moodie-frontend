@@ -56,7 +56,7 @@ const useStudents = (db, user, selectedCampus) => {
             return diffDays <= 60; // Within 60 days
           });
 
-          return { 
+          const studentData = { 
             id: ds.id, 
             ...s, 
             moods, 
@@ -67,6 +67,8 @@ const useStudents = (db, user, selectedCampus) => {
               date: recentEvent.date.toDate(),
             } : null 
           };
+          console.log('Student data:', studentData); // Debug log
+          return studentData;
         })
       );
       arr.sort((a, b) => (a.averageMood ?? 99) - (b.averageMood ?? 99));
