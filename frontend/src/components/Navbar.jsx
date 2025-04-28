@@ -2,7 +2,7 @@
 import React from 'react';
 import { Upload, LogOut, Smile, ArrowLeft, UserPlus } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { headerStyle, headerInnerStyle, brandingStyle, titleStyle, searchContainerStyle, searchInputStyle, campusSelectorStyle, controlsStyle, uploadButtonStyle, addCounselorButtonStyle, addStudentButtonStyle, downloadButtonStyle, moodSelectorStyle, backButtonStyle, signOutStyle, iconStyle } from '../styles.js';
+import { uploadButtonStyle, addCounselorButtonStyle, addStudentButtonStyle, downloadButtonStyle, moodSelectorStyle, backButtonStyle, signOutStyle, headerStyle, headerInnerStyle, brandingStyle, titleStyle, searchContainerStyle, searchInputStyle, campusSelectorStyle, controlsStyle } from '../styles.js';
 
 const Navbar = ({
   schoolDisplayName,
@@ -61,7 +61,7 @@ const Navbar = ({
         </div>
         <div style={controlsStyle}>
           <label style={uploadButtonStyle}>
-            <Upload style={iconStyle} />
+            <Upload style={{ width: 20, height: 20 }} />
             <span>{uploading ? 'Uploading...' : 'Upload CSV'}</span>
             <input
               type="file"
@@ -72,21 +72,21 @@ const Navbar = ({
             />
           </label>
           <button style={addCounselorButtonStyle} onClick={() => setShowCounselorModal(true)} aria-label="Add a counselor">
-            <UserPlus style={iconStyle} />
+            <UserPlus style={{ width: 20, height: 20 }} />
             <span>Add Counselor</span>
           </button>
           <button style={addStudentButtonStyle} onClick={() => setShowStudentModal(true)} aria-label="Add a student">
-            <UserPlus style={iconStyle} />
+            <UserPlus style={{ width: 20, height: 20 }} />
             <span>Add Student</span>
           </button>
           {onMoodSelector ? (
             <button style={backButtonStyle} onClick={() => navigate('/admin')} aria-label="Go back">
-              <ArrowLeft style={iconStyle} />
+              <ArrowLeft style={{ width: 20, height: 20 }} />
               <span>Back</span>
             </button>
           ) : (
             <button style={moodSelectorStyle} onClick={handleMoodSelectorRedirect} aria-label="Go to mood selector">
-              <Smile style={iconStyle} />
+              <Smile style={{ width: 20, height: 20 }} />
               <span>Mood Selector</span>
             </button>
           )}
@@ -94,7 +94,7 @@ const Navbar = ({
             <span>Download CSV</span>
           </button>
           <button style={signOutStyle} onClick={handleSignOut} aria-label="Sign out">
-            <LogOut style={iconStyle} />
+            <LogOut style={{ width: 20, height: 20 }} />
             <span>Sign Out</span>
           </button>
         </div>
