@@ -9,7 +9,7 @@ import AddStudentModal from './AddStudentModal.jsx';
 import AddCounselorModal from './AddCounselorModal.jsx';
 import useStudents from '../hooks/useStudents.js';
 import useSchoolData from '../hooks/useSchoolData.js';
-import { containerStyle, mainStyle, loadingStyle } from './styles.js';
+import { containerStyle, mainStyle, loadingStyle } from '../styles.js';
 
 export default function AdminDashboard({ user }) {
   const navigate = useNavigate();
