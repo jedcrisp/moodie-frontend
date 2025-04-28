@@ -1,10 +1,10 @@
 // frontend/src/hooks/useStudents.js
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { getFirestore, collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { tooltipTextStyle } from '../styles.js';
 
 export default function useStudents(db, user, defaultCampus) {
-  const [filteredStudents, setFilteredStudents] = useState([]);
+  const [students, setStudents] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCampus, setSelectedCampus] = useState(defaultCampus || '');
   const [loading, setLoading] = useState(true);
@@ -46,7 +46,7 @@ export default function useStudents(db, user, defaultCampus) {
         };
       });
 
-      setFilteredStudents(studentsWithMoodsAndEvents);
+      setStudents(studentsWithMoodsAndEvents);
     } catch (err) {
       console.error('Error fetching students:', err);
     } finally {
@@ -68,15 +68,14 @@ export default function useStudents(db, user, defaultCampus) {
     }
   };
 
-  useEffect(() => {
-    const filtered = filteredStudents.filter(student => {
+  const filteredStudents = useMemo(() => {
+    return students.filter(student => {
       const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         student.studentId.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesCampus = selectedCampus ? student.campus === selectedCampus : true;
       return matchesSearch && matchesCampus;
     });
-    setFilteredStudents(filtered);
-  }, [searchQuery, selectedCampus]);
+  }, [students, searchQuery, selectedCampus]);
 
   return {
     filteredStudents,
