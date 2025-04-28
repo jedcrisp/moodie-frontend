@@ -119,7 +119,7 @@ export default function App() {
 
           {/* Student profile route */}
           <Route
-            path="students/:id"
+            path="students/:studentsId"
             element={<StudentProfile user={user} />}
           />
 
