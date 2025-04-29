@@ -1,106 +1,157 @@
-// frontend/src/components/Navbar.jsx
-import React from 'react';
-import { Upload, LogOut, Smile, ArrowLeft, UserPlus } from 'lucide-react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { headerStyle, headerInnerStyle, brandingStyle, titleStyle, searchContainerStyle, searchInputStyle, campusSelectorStyle, controlsStyle, uploadButtonStyle, addCounselorButtonStyle, addStudentButtonStyle, downloadButtonStyle, moodSelectorStyle, backButtonStyle, signOutStyle, iconStyle } from '../styles.js';
+// frontend/src/hooks/useStudents.js
+import { useState, useEffect } from 'react';
+import { getFirestore, collection, getDocs, deleteDoc, doc, getDoc } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
+import { tooltipTextStyle } from '../styles.js';
 
-const Navbar = ({
-  schoolDisplayName,
-  searchQuery,
-  setSearchQuery,
-  selectedCampus,
-  setSelectedCampus,
-  availableCampuses,
-  user,
-  uploading,
-  handleCsvUpload,
-  handleDownloadCsv,
-  setShowCounselorModal,
-  setShowStudentModal,
-  handleSignOut,
-}) => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const onMoodSelector = location.pathname.endsWith('/mood-selector');
+export default function useStudents(db, user, defaultCampus) {
+  const [students, setStudents] = useState(null); // Initialize as null to indicate uninitialized state
+  const [filteredStudents, setFilteredStudents] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCampus, setSelectedCampus] = useState(defaultCampus || '');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [tokenClaims, setTokenClaims] = useState(null);
 
-  const handleMoodSelectorRedirect = () => navigate('mood-selector');
+  const fetchStudents = async () => {
+    if (!user || !user.school) {
+      setError('User or school not defined');
+      setLoading(false);
+      setStudents([]);
+      setFilteredStudents([]);
+      return;
+    }
 
-  return (
-    <header style={headerStyle}>
-      <div style={headerInnerStyle}>
-        <div style={brandingStyle}>
-          <h1 style={titleStyle}>{schoolDisplayName} Dashboard</h1>
-          <div style={searchContainerStyle}>
-            <input
-              type="text"
-              placeholder="Search by name or ID…"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              style={searchInputStyle}
-              aria-label="Search students by name or ID"
-            />
-            <select
-              value={selectedCampus}
-              onChange={e => setSelectedCampus(e.target.value)}
-              style={campusSelectorStyle}
-              aria-label="Select campus"
-            >
-              <option value="">All Campuses</option>
-              {availableCampuses.map(campus => (
-                <option
-                  key={campus}
-                  value={campus}
-                  disabled={user?.campuses && !user.campuses.includes(campus)}
-                >
-                  {campus}
-                  {user?.campuses && !user.campuses.includes(campus) ? ' (Restricted)' : ''}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-        <div style={controlsStyle}>
-          <label style={uploadButtonStyle}>
-            <Upload style={iconStyle} />
-            <span>{uploading ? 'Uploading...' : 'Upload CSV'}</span>
-            <input
-              type="file"
-              accept=".csv"
-              style={{ display: 'none' }}
-              onChange={handleCsvUpload}
-              disabled={uploading}
-            />
-          </label>
-          <button style={addCounselorButtonStyle} onClick={() => setShowCounselorModal(true)} aria-label="Add a counselor">
-            <UserPlus style={iconStyle} />
-            <span>Add Counselor</span>
-          </button>
-          <button style={addStudentButtonStyle} onClick={() => setShowStudentModal(true)} aria-label="Add a student">
-            <UserPlus style={iconStyle} />
-            <span>Add Student</span>
-          </button>
-          {onMoodSelector ? (
-            <button style={backButtonStyle} onClick={() => navigate('/admin')} aria-label="Go back">
-              <ArrowLeft style={iconStyle} />
-              <span>Back</span>
-            </button>
-          ) : (
-            <button style={moodSelectorStyle} onClick={handleMoodSelectorRedirect} aria-label="Go to mood selector">
-              <Smile style={iconStyle} />
-              <span>Mood Selector</span>
-            </button>
-          )}
-          <button style={downloadButtonStyle} onClick={handleDownloadCsv} aria-label="Download CSV">
-            <span>Download CSV</span>
-          </button>
-          <button style={signOutStyle} onClick={handleSignOut} aria-label="Sign out">
-            <LogOut style={iconStyle} />
-            <span>Sign Out</span>
-          </button>
-        </div>
-      </div>
-    </header>
-  );
-};
+    setLoading(true);
+    try {
+      const userDocRef = doc(db, 'schools', user.school, 'users', user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+      if (userDocSnap.exists()) {
+        console.log('User role document:', userDocSnap.data());
+      } else {
+        console.log('User role document does not exist at:', userDocRef.path);
+      }
 
-export default Navbar;
+      const auth = getAuth();
+      const currentUser = auth.currentUser;
+      const userEmail = currentUser ? currentUser.email : 'unknown';
+      const counselorDocRef = doc(db, 'schools', user.school, 'counselors', userEmail);
+      const counselorDocSnap = await getDoc(counselorDocRef);
+      if (counselorDocSnap.exists()) {
+        console.log('Counselor document by email exists:', counselorDocSnap.data());
+      } else {
+        console.log('Counselor document does not exist at:', counselorDocRef.path);
+      }
+
+      const studentsSnap = await getDocs(collection(db, 'schools', user.school, 'students'));
+      const moodsSnap = await getDocs(collection(db, 'schools', user.school, 'moods'));
+      const eventsSnap = await getDocs(collection(db, 'schools', user.school, 'lifeEvents'));
+
+      const studentsData = studentsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const moods = moodsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const events = eventsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      const studentsWithMoodsAndEvents = studentsData.map(student => {
+        const studentMoods = moods.filter(m => m.studentId === student.id);
+        const studentEvents = events.filter(e => e.studentId === student.id);
+        const moodsWithEmoji = studentMoods.map(m => ({
+          ...m,
+          emoji: m.score === 1 ? '😢' : m.score === 2 ? '😕' : m.score === 3 ? '😐' : m.score === 4 ? '😊' : '😄',
+        }));
+        const averageMood = studentMoods.length > 0
+          ? studentMoods.reduce((sum, m) => sum + m.score, 0) / studentMoods.length
+          : null;
+        const recentEvent = studentEvents.find(event => {
+          const eventDate = event.date.toDate();
+          const now = new Date();
+          const diffDays = (now - eventDate) / (1000 * 60 * 60 * 24);
+          return diffDays <= 60;
+        });
+
+        return {
+          ...student,
+          moods: moodsWithEmoji.slice(0, 5),
+          averageMood,
+          recentLifeEvent: recentEvent || null,
+        };
+      });
+
+      setStudents(studentsWithMoodsAndEvents);
+
+      // Compute filteredStudents after students is set
+      const newFilteredStudents = studentsWithMoodsAndEvents.filter(student => {
+        const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          student.studentId.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesCampus = selectedCampus ? student.campus === selectedCampus : true;
+        return matchesSearch && matchesCampus;
+      });
+
+      setFilteredStudents(newFilteredStudents);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching students:', err);
+      setError('Failed to fetch students: ' + err.message);
+      setStudents([]);
+      setFilteredStudents([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Separate useEffect for token refresh
+  useEffect(() => {
+    const auth = getAuth();
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      currentUser.getIdTokenResult(true).then(tokenResult => {
+        console.log('Token claims:', tokenResult.claims);
+        console.log('Token email (request.auth.token.email):', tokenResult.claims.email);
+        console.log('Token UID (request.auth.uid):', tokenResult.claims.sub);
+        setTokenClaims(tokenResult.claims);
+      }).catch(err => {
+        console.error('Error getting token claims:', err);
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchStudents();
+  }, [user, db]);
+
+  // Update filteredStudents when searchQuery or selectedCampus changes
+  useEffect(() => {
+    if (students === null) {
+      setFilteredStudents([]);
+      return;
+    }
+    const newFilteredStudents = students.filter(student => {
+      const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        student.studentId.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCampus = selectedCampus ? student.campus === selectedCampus : true;
+      return matchesSearch && matchesCampus;
+    });
+    setFilteredStudents(newFilteredStudents);
+  }, [searchQuery, selectedCampus, students]);
+
+  return {
+    filteredStudents,
+    searchQuery,
+    setSearchQuery,
+    selectedCampus,
+    setSelectedCampus,
+    loading,
+    fetchStudents,
+    deleteStudent: async (studentId) => {
+      if (!studentId) return;
+      try {
+        await deleteDoc(doc(db, 'schools', user.school, 'students', studentId));
+        await fetchStudents();
+      } catch (err) {
+        console.error('Error deleting student:', err);
+        setError('Failed to delete student: ' + err.message);
+      }
+    },
+    error,
+    tokenClaims,
+  };
+}
