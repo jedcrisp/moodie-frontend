@@ -42,6 +42,7 @@ export default function StudentProfile({ user }) {
 
     async function fetchStudentData() {
       try {
+        // Fetch student details
         const studentDoc = await getDoc(doc(db, 'schools', user.school, 'students', studentId));
         if (studentDoc.exists()) {
           const studentData = { id: studentDoc.id, ...studentDoc.data() };
@@ -58,6 +59,7 @@ export default function StudentProfile({ user }) {
           return;
         }
 
+        // Fetch life events
         const eventsSnap = await getDocs(
           collection(db, 'schools', user.school, 'students', studentId, 'lifeEvents')
         );
@@ -74,6 +76,7 @@ export default function StudentProfile({ user }) {
         events.sort((a, b) => b.date - a.date);
         setLifeEvents(events);
 
+        // Fetch notes
         const notesDoc = await getDoc(doc(db, 'schools', user.school, 'students', studentId, 'notes', 'general'));
         if (notesDoc.exists()) {
           setNotes(notesDoc.data().content || '');
@@ -212,8 +215,8 @@ export default function StudentProfile({ user }) {
   };
 
   if (!student) return (
-    <div style={profileContainerStyle}>
-      <p style={{ fontSize: '2rem', color: '#7C3AED' }} aria-live="polite">Loading student data…</p>
+    <div className="h-screen flex items-center justify-center bg-gradient-to-br from-rose-200 to-blue-200">
+      <p className="text-2xl text-purple-700" aria-live="polite">Loading student data…</p>
     </div>
   );
 
@@ -276,7 +279,7 @@ export default function StudentProfile({ user }) {
                   style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
                   aria-label="Close modal"
                 >
-                  <X style={iconStyle} />
+                  <X style={{ width: 20, height: 20 }} />
                 </button>
               </div>
               <div style={modalBodyStyle}>
@@ -342,7 +345,7 @@ export default function StudentProfile({ user }) {
 
         <div style={profileHeaderStyle}>
           <button onClick={() => navigate('/admin')} style={backButtonStyle} aria-label="Go back">
-            <ArrowLeft style={iconStyle} />
+            <ArrowLeft style={{ width: 20, height: 20 }} />
             <span>Back</span>
           </button>
           <h2 style={{ fontSize: '1.5rem', fontWeight: 600 }}>{student.name}</h2>
@@ -361,49 +364,49 @@ export default function StudentProfile({ user }) {
             {isEditing ? (
               <>
                 <div style={formGroupStyle}>
-                  <label style={labelStyle}>Student ID</label>
+                  <label style={{ ...labelStyle, fontSize: '0.75rem' }}>Student ID</label>
                   <input
                     type="text"
                     value={student.studentId}
                     disabled
-                    style={{ ...modalInputStyle, backgroundColor: '#F3F4F6' }}
+                    style={{ ...modalInputStyle, backgroundColor: '#F3F4F6', fontSize: '0.875rem' }}
                   />
                 </div>
                 <div style={formGroupStyle}>
-                  <label style={labelStyle}>Grade</label>
+                  <label style={{ ...labelStyle, fontSize: '0.75rem' }}>Grade</label>
                   <input
                     type="text"
                     value={editForm.grade}
                     onChange={e => setEditForm({ ...editForm, grade: e.target.value })}
-                    style={modalInputStyle}
+                    style={{ ...modalInputStyle, fontSize: '0.875rem' }}
                   />
                 </div>
                 <div style={formGroupStyle}>
-                  <label style={labelStyle}>Birthday</label>
+                  <label style={{ ...labelStyle, fontSize: '0.75rem' }}>Birthday</label>
                   <input
                     type="text"
                     value={editForm.birthday}
                     onChange={e => setEditForm({ ...editForm, birthday: e.target.value })}
-                    style={modalInputStyle}
+                    style={{ ...modalInputStyle, fontSize: '0.875rem' }}
                     placeholder="e.g., MM/DD/YYYY"
                   />
                 </div>
                 <div style={formGroupStyle}>
-                  <label style={labelStyle}>Campus</label>
+                  <label style={{ ...labelStyle, fontSize: '0.75rem' }}>Campus</label>
                   <input
                     type="text"
                     value={editForm.campus}
                     onChange={e => setEditForm({ ...editForm, campus: e.target.value })}
-                    style={modalInputStyle}
+                    style={{ ...modalInputStyle, fontSize: '0.875rem' }}
                   />
                 </div>
                 <div style={formGroupStyle}>
-                  <label style={labelStyle}>Email</label>
+                  <label style={{ ...labelStyle, fontSize: '0.75rem' }}>Email</label>
                   <input
                     type="email"
                     value={editForm.email}
                     onChange={e => setEditForm({ ...editForm, email: e.target.value })}
-                    style={modalInputStyle}
+                    style={{ ...modalInputStyle, fontSize: '0.875rem' }}
                   />
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
@@ -475,7 +478,9 @@ export default function StudentProfile({ user }) {
                   return (
                     <div key={event.id} style={{ display: 'flex', alignItems: 'center' }}>
                       <div style={chipStyle}>
-                        <Calendar style={{ width: 14, height: 14, color: eventType.category === 'emotional' ? '#DC2626' : eventType.category === 'relocation' ? '#2563EB' : '#4B5563', marginRight: '4px' }} />
+                        <span style={{ marginRight: '4px' }}>
+                          {eventType.category === 'emotional' ? '❤️' : eventType.category === 'relocation' ? '🏠' : '📅'}
+                        </span>
                         {event.type} ({eventDate.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' })})
                         {event.notes && <span style={{ marginLeft: '4px', fontStyle: 'italic' }}>- {event.notes}</span>}
                       </div>
