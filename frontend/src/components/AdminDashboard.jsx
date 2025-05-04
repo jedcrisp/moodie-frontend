@@ -1,4 +1,3 @@
-// frontend/src/components/AdminDashboard.js
 import React, { useState } from 'react';
 import { getFirestore, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
@@ -12,6 +11,22 @@ import useStudents from '../hooks/useStudents';
 import useAutoLogout from '../hooks/useAutoLogout';
 import { handleCsvUpload, handleDownloadCsv } from '../utils/csvHandlers.js';
 import { containerStyle, mainStyle, loadingStyle } from '../styles.js';
+
+// Error Boundary Component
+class ErrorBoundary extends React.Component {
+  state = { hasError: false, error: null };
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <p style={{ ...loadingStyle, color: 'red' }}>Rendering error: {this.state.error?.message || 'Unknown error'}</p>;
+    }
+    return this.props.children;
+  }
+}
 
 export default function AdminDashboard({ user }) {
   const db = getFirestore();
@@ -120,7 +135,7 @@ export default function AdminDashboard({ user }) {
   };
 
   // Debug: Log filteredStudents to verify its structure
-  console.log('filteredStudents:', filteredStudents);
+  console.log('AdminDashboard - filteredStudents:', filteredStudents);
 
   return (
     <div style={containerStyle}>
@@ -179,14 +194,18 @@ export default function AdminDashboard({ user }) {
           {loading ? (
             <p style={loadingStyle}>Loading student moods…</p>
           ) : error ? (
-            <p style={loadingStyle}>Error: {error}</p>
+            <p style={{ ...loadingStyle, color: 'red' }}>Error: {error}</p>
           ) : Array.isArray(filteredStudents) ? (
-            <StudentTable
-              filteredStudents={filteredStudents}
-              deleteStudent={deleteStudent}
-            />
+            <ErrorBoundary>
+              <StudentTable
+                filteredStudents={filteredStudents}
+                deleteStudent={deleteStudent}
+              />
+            </ErrorBoundary>
           ) : (
-            <p style={loadingStyle}>Error: Invalid student data. Please check the data source.</p>
+            <p style={{ ...loadingStyle, color: 'red' }}>
+              Error: Invalid student data. Expected an array, got {JSON.stringify(filteredStudents)}.
+            </p>
           )}
         </main>
       )}
