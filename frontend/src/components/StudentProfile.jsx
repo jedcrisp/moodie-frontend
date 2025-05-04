@@ -1,4 +1,3 @@
-// frontend/src/components/StudentProfile.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getFirestore, doc, getDoc, collection, getDocs, addDoc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
@@ -220,6 +219,9 @@ export default function StudentProfile({ user }) {
     </div>
   );
 
+  // Debug: Log backButtonStyle to verify it's loaded
+  console.log('StudentProfile - backButtonStyle:', backButtonStyle);
+
   return (
     <div style={profileContainerStyle}>
       {showPopup && (
@@ -344,7 +346,25 @@ export default function StudentProfile({ user }) {
         )}
 
         <div style={profileHeaderStyle}>
-          <button onClick={() => navigate('/admin')} style={backButtonStyle} aria-label="Go back">
+          <button
+            onClick={() => navigate('/admin')}
+            style={{
+              ...backButtonStyle,
+              // Fallback styles in case backButtonStyle is undefined
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '8px 16px',
+              backgroundColor: backButtonStyle?.backgroundColor || '#4B5EAA',
+              color: backButtonStyle?.color || '#FFFFFF',
+              border: backButtonStyle?.border || 'none',
+              borderRadius: backButtonStyle?.borderRadius || '8px',
+              cursor: 'pointer',
+              fontSize: backButtonStyle?.fontSize || '16px',
+              fontWeight: backButtonStyle?.fontWeight || '500',
+            }}
+            aria-label="Go back"
+          >
             <ArrowLeft style={{ width: 20, height: 20 }} />
             <span>Back</span>
           </button>
