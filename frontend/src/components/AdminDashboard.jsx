@@ -1,3 +1,4 @@
+// frontend/src/components/AdminDashboard.js
 import React, { useState } from 'react';
 import { getFirestore, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
@@ -48,38 +49,33 @@ export default function AdminDashboard({ user }) {
     loading,
     fetchStudents,
     deleteStudent,
+    error,
   } = useStudents(db, user, selectedCampus);
 
   const handleSignOut = useAutoLogout(auth);
 
   const handleAddCounselor = async () => {
-  if (!newCounselorName || !newCounselorEmail || !newCounselorCampus) {
-    alert('Please fill in all required fields.');
-    return;
-  }
-  try {
-    // Add the counselor to the counselors collection using the email as the document ID
-    await setDoc(doc(db, 'schools', user.school, 'counselors', newCounselorEmail), {
-      name: newCounselorName,
-      email: newCounselorEmail,
-      campus: newCounselorCampus,
-      createdAt: serverTimestamp(),
-    });
-
-    // Note: In a real app, you should create a Firebase Auth user for the counselor
-    // and get their UID. For now, we'll assume the counselor already exists in Auth
-    // and manually link them. You'll need to set the UID manually or via a backend process.
-    alert('Counselor added. Please ensure the counselor is registered in Firebase Auth and their UID is linked in the users collection.');
-
-    setShowCounselorModal(false);
-    setNewCounselorName('');
-    setNewCounselorEmail('');
-    setNewCounselorCampus('');
-  } catch (err) {
-    console.error('Error adding counselor:', err);
-    alert('Failed to add counselor. Please try again.');
-  }
-};
+    if (!newCounselorName || !newCounselorEmail || !newCounselorCampus) {
+      alert('Please fill in all required fields.');
+      return;
+    }
+    try {
+      await setDoc(doc(db, 'schools', user.school, 'counselors', newCounselorEmail), {
+        name: newCounselorName,
+        email: newCounselorEmail,
+        campus: newCounselorCampus,
+        createdAt: serverTimestamp(),
+      });
+      alert('Counselor added. Please ensure the counselor is registered in Firebase Auth.');
+      setShowCounselorModal(false);
+      setNewCounselorName('');
+      setNewCounselorEmail('');
+      setNewCounselorCampus('');
+    } catch (err) {
+      console.error('Error adding counselor:', err);
+      alert('Failed to add counselor. Please try again.');
+    }
+  };
 
   const handleAddStudent = async () => {
     if (!newStudentName || !newStudentId || !newStudentEmail) {
@@ -122,6 +118,9 @@ export default function AdminDashboard({ user }) {
       alert('Failed to add student. Please try again.');
     }
   };
+
+  // Debug: Log filteredStudents to verify its structure
+  console.log('filteredStudents:', filteredStudents);
 
   return (
     <div style={containerStyle}>
@@ -179,11 +178,15 @@ export default function AdminDashboard({ user }) {
         <main style={mainStyle}>
           {loading ? (
             <p style={loadingStyle}>Loading student moods…</p>
-          ) : (
+          ) : error ? (
+            <p style={loadingStyle}>Error: {error}</p>
+          ) : Array.isArray(filteredStudents) ? (
             <StudentTable
               filteredStudents={filteredStudents}
               deleteStudent={deleteStudent}
             />
+          ) : (
+            <p style={loadingStyle}>Error: Invalid student data. Please check the data source.</p>
           )}
         </main>
       )}
